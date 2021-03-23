@@ -6,9 +6,10 @@ nand2tetris/
 02/*.cmp
 02/*.tst
 02/*.out
-03/a/*.cmp
-03/a/*.tst
-03/a/*.out
-03/b/*.cmp
-03/b/*.tst
-03/b/*.out
+03/*/*.cmp
+03/*/*.tst
+03/*/*.out
+04/*/*.tst
+04/*/*.cmp
+04/*/*.hack
+04/*/*.out
