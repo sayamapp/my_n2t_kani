@@ -40,4 +40,95 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
+
+    // decode
+    And16(a=instruction, b[0..15]=true, 
+        out[15]=nv,
+        out[12]=ac,
+        out[11]=c1, out[10]=c2, out[9]=c3, out[8]=c4, out[7]=c5, out[6]=c6,
+        out[5]=d1, out[4]=d2, out[3]=d3,
+        out[2]=j1, out[1]=j2, out[0]=j3
+        );
+    Not(in=nv, out=v);
+
+    // ARegister
+    Mux16(a=arSelIn, b=instruction, sel=v, out=arIn);
+    Or(a=v, b=d1, out=ald);
+    ARegister(in=arIn, load=ald, out=amSel, out=pcIn, out[0..14]=addressM);
+
+    // alu
+    ALU(x=d, y=am, zx=c1, nx=c2, zy=c3, ny=c4, f=c5, no=c6, 
+        out=outM, out=drIn, out=arSelIn, zr=zr, ng=ng);
+
+    // DRegister
+    
+    // Or(a=j1, b=j2, out=j4);
+    // Or(a=j3, b=j4, out=jf);
+    // Not(in=jf, out=njf);
+    // And(a=d2, b=njf, out=df);
+    // And(a=df, b=nv, out=dff);
+    // DRegister(in=drIn, load=dff, out=d);
+
+    
+    // writeM
+    And(a=d3, b=nv, out=writeM);
+
+    // A/M Selector
+    Mux16(a=amSel, b=inM, sel=ac, out=am);
+
+    // pc
+    PC(in=pcIn, load=ld, inc=inc, reset=reset, out[0..14]=pc);
+
+
+    // Jump
+    Not(in=j1, out=nj1);
+    Not(in=j2, out=nj2);
+    Not(in=j3, out=nj3);
+    Not(in=ng, out=gt);
+    Not(in=zr, out=ne);
+
+    // JGT
+    And(a=nj1, b=nj2, out=f01);
+    And(a=f01, b=j3, out=jgt);
+    And(a=jgt, b=gt, out=f11);
+    And(a=f11, b=ne, out=jump1);
+
+    // JEQ
+    And(a=nj1, b=j2, out=f02);
+    And(a=f02, b=nj3, out=jeq);
+    And(a=jeq, b=zr, out=jump2);
+
+    // JGE
+    And(a=nj1, b=j2, out=f03);
+    And(a=f03, b=j3, out=jge);
+    Or(a=zr, b=gt, out=ge);
+    And(a=jge, b=ge, out=jump3);
+
+    // JLT
+    And(a=j1, b=nj2, out=f04);
+    And(a=f04, b=nj3, out=jlt);
+    And(a=jlt, b=ne, out=f14);
+    And(a=f14, b=ng, out=jump4);
+
+    // JNE
+    And(a=j1, b=nj2, out=f05);
+    And(a=f05, b=j3, out=jne);
+    And(a=jne, b=ne, out=jump5);
+
+    // JLE
+    And(a=j1, b=j2, out=f06);
+    And(a=f06, b=nj3, out=jle);
+    Or(a=zr, b=ng, out=le);
+    And(a=jle, b=le, out=jump6);
+
+    // JMP
+    And(a=j1, b=j2, out=f07);
+    And(a=f07, b=j3, out=jump7);
+
+    Or8Way(in[0] = jump1, in[1] = jump2, in[2] = jump3, in[3] = jump4,
+        in[4] = jump5, in[5] = jump6, in[6] = jump7, in[7] = false, out= jump);
+    
+    And(a=jump, b=nv, out=ld);
+
+    Not(in=ld, out = inc);
 }
