@@ -51,6 +51,8 @@ CHIP CPU {
         );
     Not(in=nv, out=v);
 
+    // 
+
     // ARegister
     Mux16(a=arSelIn, b=instruction, sel=v, out=arIn);
     Or(a=v, b=d1, out=ald);
@@ -61,13 +63,12 @@ CHIP CPU {
         out=outM, out=drIn, out=arSelIn, zr=zr, ng=ng);
 
     // DRegister
-    
-    // Or(a=j1, b=j2, out=j4);
-    // Or(a=j3, b=j4, out=jf);
-    // Not(in=jf, out=njf);
-    // And(a=d2, b=njf, out=df);
-    // And(a=df, b=nv, out=dff);
-    // DRegister(in=drIn, load=dff, out=d);
+    Or(a=j1, b=j2, out=j4);
+    Or(a=j3, b=j4, out=jf);
+    Not(in=jf, out=njf);
+    And(a=d2, b=njf, out=df);
+    And(a=df, b=nv, out=dff);
+    DRegister(in=drIn, load=dff, out=d);
 
     
     // writeM
