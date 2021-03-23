@@ -43,36 +43,33 @@ CHIP CPU {
 
     // decode
     And16(a=instruction, b[0..15]=true, 
-        out[15]=nv,
+        out[15]=isCCommand,
         out[12]=ac,
         out[11]=c1, out[10]=c2, out[9]=c3, out[8]=c4, out[7]=c5, out[6]=c6,
         out[5]=d1, out[4]=d2, out[3]=d3,
         out[2]=j1, out[1]=j2, out[0]=j3
         );
-    Not(in=nv, out=v);
 
-    // 
+    Not(in=isCCommand, out=isACommand);
+    Or(a=isACommand, b=d1, out=loadAReg);
+    Or8Way(in[0]= j1, in[1]=j2, in[2]=j3, in[3..7]=false, out=isJump);
+    Not(in=isJump, out=notJump);
 
     // ARegister
-    Mux16(a=arSelIn, b=instruction, sel=v, out=arIn);
-    Or(a=v, b=d1, out=ald);
-    ARegister(in=arIn, load=ald, out=amSel, out=pcIn, out[0..14]=addressM);
+    Mux16(a=arSelIn, b=instruction, sel=isACommand, out=arIn);
+    ARegister(in=arIn, load=loadAReg, out=amSel, out=pcIn, out[0..14]=addressM);
 
     // alu
     ALU(x=d, y=am, zx=c1, nx=c2, zy=c3, ny=c4, f=c5, no=c6, 
         out=outM, out=drIn, out=arSelIn, zr=zr, ng=ng);
 
     // DRegister
-    Or(a=j1, b=j2, out=j4);
-    Or(a=j3, b=j4, out=jf);
-    Not(in=jf, out=njf);
-    And(a=d2, b=njf, out=df);
-    And(a=df, b=nv, out=dff);
-    DRegister(in=drIn, load=dff, out=d);
+    And(a=d2, b=notJump, out=ldr);
+    And(a=ldr, b=isCCommand, out=loadDReg);
+    DRegister(in=drIn, load=loadDReg, out=d);
 
-    
     // writeM
-    And(a=d3, b=nv, out=writeM);
+    And(a=d3, b=isCCommand, out=writeM);
 
     // A/M Selector
     Mux16(a=amSel, b=inM, sel=ac, out=am);
@@ -80,56 +77,57 @@ CHIP CPU {
     // pc
     PC(in=pcIn, load=ld, inc=inc, reset=reset, out[0..14]=pc);
 
-
     // Jump
+    Not(in=ng, out=gt);
+    Not(in=zr, out=ne);
     Not(in=j1, out=nj1);
     Not(in=j2, out=nj2);
     Not(in=j3, out=nj3);
-    Not(in=ng, out=gt);
-    Not(in=zr, out=ne);
+
+    Or(a=zr, b=false, out=isZero);
+    And(a=gt, b=ne, out=isGt);
+    And(a=ng, b=ne, out=isLt);
+    Or(a=isZero, b=isGt, out=isGe);
+    Or(a=isZero, b=isLt, out=isLe);
+    Not(in=isZero, out=isNe);
 
     // JGT
-    And(a=nj1, b=nj2, out=f01);
-    And(a=f01, b=j3, out=jgt);
-    And(a=jgt, b=gt, out=f11);
-    And(a=f11, b=ne, out=jump1);
+    And(a=nj1, b=nj2, out=f1);
+    And(a=f1, b=j3, out=jgt);
+    And(a=jgt, b=isGt, out=jump1);
 
     // JEQ
-    And(a=nj1, b=j2, out=f02);
-    And(a=f02, b=nj3, out=jeq);
-    And(a=jeq, b=zr, out=jump2);
-
+    And(a=nj1, b=j2, out=f2);
+    And(a=f2, b=nj3, out=jeq);
+    And(a=jeq, b=isZero, out=jump2);
+  
     // JGE
-    And(a=nj1, b=j2, out=f03);
-    And(a=f03, b=j3, out=jge);
-    Or(a=zr, b=gt, out=ge);
-    And(a=jge, b=ge, out=jump3);
+    And(a=nj1, b=j2, out=f3);
+    And(a=f3, b=j3, out=jge);
+    And(a=jge, b=isGe, out=jump3);
 
     // JLT
-    And(a=j1, b=nj2, out=f04);
-    And(a=f04, b=nj3, out=jlt);
-    And(a=jlt, b=ne, out=f14);
-    And(a=f14, b=ng, out=jump4);
+    And(a=j1, b=nj2, out=f4);
+    And(a=f4, b=nj3, out=jlt);
+    And(a=jlt, b=isLt, out=jump4);
 
     // JNE
-    And(a=j1, b=nj2, out=f05);
-    And(a=f05, b=j3, out=jne);
-    And(a=jne, b=ne, out=jump5);
+    And(a=j1, b=nj2, out=f5);
+    And(a=f5, b=j3, out=jne);
+    And(a=jne, b=isNe, out=jump5);
 
     // JLE
-    And(a=j1, b=j2, out=f06);
-    And(a=f06, b=nj3, out=jle);
-    Or(a=zr, b=ng, out=le);
-    And(a=jle, b=le, out=jump6);
+    And(a=j1, b=j2, out=f6);
+    And(a=f6, b=nj3, out=jle);
+    And(a=jle, b=isLe, out=jump6);
 
     // JMP
-    And(a=j1, b=j2, out=f07);
-    And(a=f07, b=j3, out=jump7);
+    And(a=j1, b=j2, out=f7);
+    And(a=f7, b=j3, out=jump7);
 
-    Or8Way(in[0] = jump1, in[1] = jump2, in[2] = jump3, in[3] = jump4,
-        in[4] = jump5, in[5] = jump6, in[6] = jump7, in[7] = false, out= jump);
-    
-    And(a=jump, b=nv, out=ld);
-
-    Not(in=ld, out = inc);
+    // Load or Inc
+    Or8Way(in[0]=jump1, in[1]=jump2, in[2]=jump3, in[3]=jump4, in[4]=jump5,
+        in[5]=jump6, in[6]=jump7, in[7]=false, out=jump);
+    And(a=jump, b=isCCommand, out=ld);
+    Not(in=ld, out=inc);
 }
