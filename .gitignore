@@ -3,3 +3,6 @@ nand2tetris/
 01/*.cmp
 01/*.tst
 01/*.out
+02/*.cmp
+02/*.tst
+02/*.out
