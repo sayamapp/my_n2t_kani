@@ -1,0 +1,5 @@
+nand2tetris/
+.DS_Store
+01/*.cmp
+01/*.tst
+01/*.out
