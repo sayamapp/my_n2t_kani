@@ -13,3 +13,7 @@ nand2tetris/
 04/*/*.cmp
 04/*/*.hack
 04/*/*.out
+05/*.tst
+05/*.cmp
+05/*.hack
+05/*.out
