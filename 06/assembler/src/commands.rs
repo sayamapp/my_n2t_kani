@@ -4,6 +4,11 @@ pub struct CCommand {
     comp: Comp,
     jump: Option<Jump>,
 }
+impl CCommand {
+    pub fn new(s: &str) -> Self {
+        
+    }
+}
 
 #[derive(Debug)]
 pub enum Dest {
