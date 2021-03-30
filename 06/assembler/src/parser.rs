@@ -1,15 +1,29 @@
-use std::{fs::File, io::Read};
+use std::{fs::File, io::Read, str};
 
 use crate::commands::CCommand;
 
+struct Commands(Vec<Command>);
 enum Command {
     ACommand(ACommand),
     CCommand(CCommand),
     LCommand(LCommand),
+    NotCommand,
 }
 enum ACommand {
     Value(usize),
     Symbol(String),
+}
+impl ACommand {
+    pub fn new(s: &str) -> Self {
+        let s = s.to_string();
+        s.retain(|c| c != '@');
+        let value = s.parse::<usize>();
+        if let Ok(value) = value {
+            ACommand::Value(value)
+        } else {
+            ACommand::Symbol(s)
+        }
+    }
 }
 struct LCommand(String);
 
@@ -19,6 +33,7 @@ pub struct Parser {
     binary_codes: Vec<Option<String>>,
 }
 
+#[derive(Debug)]
 pub struct Lines(Vec<Line>);
 impl Lines {
     pub fn new(path: &str) -> Self {
@@ -32,18 +47,49 @@ impl Lines {
         }
         Lines(lines)
     }
+
+    pub fn to_commands(&self) -> Commands {
+        let mut commands : Vec<Command> = Vec::new();
+        for line in &self.0 {
+            if let Some(line) = &line.0 {
+                match line.chars().nth(0) {
+                    Some('@') => {
+                        commands.push(Command::ACommand(ACommand::new(line)));
+                    },
+                    Some('(') => {
+                        let symbol = line.to_string();
+                        symbol.retain(|c| c != '(' && c != ')');
+                        commands.push(Command::LCommand(LCommand(symbol)));
+                    },
+                    Some(_) => {
+
+                    },
+                    None => {
+                        commands.push(Command::NotCommand);
+                    }
+                }
+            } else {
+                commands.push(Command::NotCommand);
+            }
+        }
+        Commands(commands)
+    }
 }
 
+#[derive(Debug)]
 struct Line(Option<String>);
 impl Line {
     pub fn new(line: &str) -> Self {
         println!("{:?}", line);
         let line = line.trim();
         let line: Vec<&str> = line.split("//").collect();
-        line[0].to_string().retain(|c| c != ' ');
-        println!("{:?}", line[0]);
+        let line[0].to_string().retain(|c| c != ' ');
 
-        Line(None)
+        if line[0] != "" {
+            Line(Some(line[0].to_string()))
+        } else {
+            Line(None)
+        }
     }
 }
 // use std::fs::File;

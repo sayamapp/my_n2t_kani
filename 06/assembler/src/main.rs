@@ -10,4 +10,5 @@ fn main() {
     // println!("{:?}", parser);
     let args: Vec<String> = env::args().collect();
     let lines = Lines::new(&args[1].to_string());
+    println!("{:?}", lines);
 }
