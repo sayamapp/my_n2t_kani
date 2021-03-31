@@ -2,20 +2,29 @@ use std::{fs::File, io::Read, str};
 
 use crate::commands::CCommand;
 
-struct Commands(Vec<Command>);
-enum Command {
+#[derive(Debug)]
+pub struct Commands(Vec<Command>);
+impl Commands {
+    pub fn to_binary(&self) -> Vec<Option<String>> {
+
+    }
+}
+
+#[derive(Debug)]
+pub enum Command {
     ACommand(ACommand),
     CCommand(CCommand),
     LCommand(LCommand),
     NotCommand,
 }
-enum ACommand {
+#[derive(Debug)]
+pub enum ACommand {
     Value(usize),
     Symbol(String),
 }
 impl ACommand {
     pub fn new(s: &str) -> Self {
-        let s = s.to_string();
+        let mut s = s.to_string();
         s.retain(|c| c != '@');
         let value = s.parse::<usize>();
         if let Ok(value) = value {
@@ -25,7 +34,15 @@ impl ACommand {
         }
     }
 }
+#[derive(Debug)]
 struct LCommand(String);
+impl LCommand {
+    pub fn new(s: &str) -> Self {
+        let mut s = s.to_string();
+        s.retain(|c| c != '(' && c !=')');
+        LCommand(s)
+    }
+}
 
 pub struct Parser {
     lines: Lines,
@@ -57,18 +74,18 @@ impl Lines {
                         commands.push(Command::ACommand(ACommand::new(line)));
                     },
                     Some('(') => {
-                        let symbol = line.to_string();
+                        let mut symbol = line.to_string();
                         symbol.retain(|c| c != '(' && c != ')');
                         commands.push(Command::LCommand(LCommand(symbol)));
                     },
                     Some(_) => {
-
+                        commands.push(Command::CCommand(CCommand::new(line)));
                     },
                     None => {
                         commands.push(Command::NotCommand);
                     }
                 }
-            } else {
+            } else { 
                 commands.push(Command::NotCommand);
             }
         }
@@ -83,7 +100,7 @@ impl Line {
         println!("{:?}", line);
         let line = line.trim();
         let line: Vec<&str> = line.split("//").collect();
-        let line[0].to_string().retain(|c| c != ' ');
+        line[0].to_string().retain(|c| c != ' ');
 
         if line[0] != "" {
             Line(Some(line[0].to_string()))
@@ -92,7 +109,7 @@ impl Line {
         }
     }
 }
-// use std::fs::File;
+// use std: w:fs::File;
 // use std::io::Read;
 // use std::collections::HashMap;
 

@@ -6,7 +6,35 @@ pub struct CCommand {
 }
 impl CCommand {
     pub fn new(s: &str) -> Self {
-        
+        let dcj: Vec<&str> = s.split(';').collect();
+        let dc = dcj[0];
+        let mut jump = "";
+        if dcj.len() > 1 {jump = dcj[1];}
+
+        let dc: Vec<&str> = dc.split('=').collect();
+        let mut dest = "";
+        let mut comp = "";
+        if dc.len() > 1 {
+            dest = dc[0];
+            comp = dc[1];
+        } else {
+            comp = dc[0];
+        }
+
+        let mut e_dest = None;
+        if dest != "" {e_dest = Some(Dest::to_enum(dest.to_string()));}
+
+        let e_comp = Comp::to_enum(comp.to_string());
+
+        let mut e_jump = None;
+        if jump != "" {e_jump = Some(Jump::to_enum(jump.to_string()));}
+
+
+        CCommand {
+            dest: e_dest,
+            comp: e_comp,
+            jump: e_jump,
+        }
     }
 }
 
