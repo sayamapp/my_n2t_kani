@@ -1,14 +1,41 @@
 use std::{fs::File, io::Read};
 
+use crate::code::*;
+
 #[derive(Debug)]
-enum Line {
+struct CCommand {
+    dest: Option<String>,
+    comp: String,
+    jump: Option<String>,
+}
+impl CCommand {
+    fn new(s: &str) -> Self {
+        let mut ccommand = CCommand{dest: None, comp: "NOP".to_string(), jump: None};
+        let dc_j = s.split(";").collect::<Vec<&str>>();
+        if dc_j.len() > 1 {
+            ccommand.jump = Some(dc_j[1].to_string());
+        }
+        let d_c = s.split("=").collect::<Vec<&str>>();
+        if d_c.len() > 1 {
+            ccommand.dest = Some(d_c[0].to_string());
+            ccommand.comp = d_c[1].to_string();
+        } else {
+            ccommand.comp = d_c[0].to_string();
+        }
+
+        ccommand
+    }
+}
+
+#[derive(Debug)]
+pub enum Line {
     ACommand(String),
-    CCommend(String),
+    CCommand(CCommand),
     LCommand(String),
     NotCommand,
 }
 #[derive(Debug)]
-pub struct Lines(Vec<Line>);
+pub struct Lines(pub Vec<Line>);
 impl Lines {
     pub fn new(path: &str) -> Self {
         let mut file = File::open(path).expect("File not found!");
@@ -35,12 +62,36 @@ impl Lines {
             else {
                 let mut line = line.to_string();
                 line.retain(|c| c != ' ');
-                lines.push(Line::CCommend(line.to_string()))} 
+                lines.push(Line::CCommand(CCommand::new(&line)));
+            } 
 
         }
-        println!("{:?}", lines);
 
         Lines(lines) 
+    }
+
+    pub fn to_binary(&self) -> Vec<String> {
+        let mut binaries = Vec::new();
+        for line in &self.0 {
+            match line {
+                Line::ACommand(s) => {
+                    let value = s.parse::<usize>().unwrap();
+                    let v_string = format!("0{:015b}", value);
+                    binaries.push(v_string);
+                },
+                Line::CCommand(c) => {
+                    let dest = dest_to_binary(&c.dest);
+                    let comp = comp_to_binary(&c.comp);
+                    let jump = jump_to_binary(&c.jump);
+                    let c_string = format!("111{}{}{}", comp, dest, jump);
+                    binaries.push(c_string);
+                },
+                Line::LCommand(s) => {
+                }
+                Line::NotCommand => {}
+            }
+        }
+        binaries
     }
 }
 

@@ -5,6 +5,7 @@ pub struct CCommand {
     jump: Option<Jump>,
 }
 impl CCommand {
+
     pub fn new(s: &str) -> Self {
         let dcj: Vec<&str> = s.split(';').collect();
         let dc = dcj[0];
