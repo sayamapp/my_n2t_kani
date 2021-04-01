@@ -15,7 +15,7 @@ impl CCommand {
         if dc_j.len() > 1 {
             ccommand.jump = Some(dc_j[1].to_string());
         }
-        let d_c = s.split("=").collect::<Vec<&str>>();
+        let d_c = dc_j[0].split("=").collect::<Vec<&str>>();
         if d_c.len() > 1 {
             ccommand.dest = Some(d_c[0].to_string());
             ccommand.comp = d_c[1].to_string();
