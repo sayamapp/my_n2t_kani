@@ -1,6 +1,7 @@
 mod parser;
 mod code;
 mod symbol_table;
+mod assembler;
 
 use std::env;
 use std::fs::File;
@@ -27,7 +28,7 @@ fn main() {
 
         let mut row = 0;
         let mut count = 0;
-        for line in &lines.0 {
+        for line in &lines.lines  {
             match line {
                 parser::Line::ACommand(_) => {
                     count += 1;
@@ -37,8 +38,8 @@ fn main() {
                 }
                 parser::Line::LCommand(s) => {
                     for i in count.. {
-                        if i >= lines.0.len() {break;}
-                        let command = lines.0.get(row - count + i);
+                        if i >= lines.lines.len() {break;}
+                        let command = lines.lines.get(row - count + i);
                         match command {
                             Some(n) => {
                                 match n {
@@ -64,7 +65,7 @@ fn main() {
         }
 
         let mut address = 16;
-        for line in &lines.0 {
+        for line in &lines.lines {
             match line {
                 parser::Line::ACommand(s) => {
                     let value = s.parse::<usize>();
