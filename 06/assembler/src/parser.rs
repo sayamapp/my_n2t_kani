@@ -1,9 +1,10 @@
-use std::{fs::File, io::Read};
+use std::{fmt::format, fs::File, io::Read};
 
 use crate::code::*;
+use crate::symbol_table::SymbolTable;
 
 #[derive(Debug)]
-struct CCommand {
+pub struct CCommand {
     dest: Option<String>,
     comp: String,
     jump: Option<String>,
@@ -70,14 +71,21 @@ impl Lines {
         Lines(lines) 
     }
 
-    pub fn to_binary(&self) -> Vec<String> {
+    pub fn to_binary(&self, symbol_table: SymbolTable) -> Vec<String> {
         let mut binaries = Vec::new();
         for line in &self.0 {
             match line {
                 Line::ACommand(s) => {
-                    let value = s.parse::<usize>().unwrap();
-                    let v_string = format!("0{:015b}", value);
-                    binaries.push(v_string);
+                    let value = s.parse::<usize>();
+                    if let Ok(value) = value {
+                        let v_string = format!("0{:015b}", value);
+                        binaries.push(v_string);
+                    } else {
+                        let symbol = s;
+                        let value = symbol_table.get_address(&symbol);
+                        let v_string = format!("0{:015b}", value);
+                        binaries.push(v_string);
+                    }
                 },
                 Line::CCommand(c) => {
                     let dest = dest_to_binary(&c.dest);
@@ -86,7 +94,7 @@ impl Lines {
                     let c_string = format!("111{}{}{}", comp, dest, jump);
                     binaries.push(c_string);
                 },
-                Line::LCommand(s) => {
+                Line::LCommand(_) => {
                 }
                 Line::NotCommand => {}
             }
