@@ -22,6 +22,10 @@ nand2tetris/
 05/*.hack
 05/*.out
 
-06/asm_hack
 06/assembler/.idea
 06/assembler/target
+
+07/vm_translator/.idea
+07/vm_translator/target
+07/MemoryAccess
+07/StackArithmetic
