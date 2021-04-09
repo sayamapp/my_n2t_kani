@@ -1,4 +1,4 @@
-use std::{fmt::format, fs::File, io::Read};
+use std::{fs::File, io::Read};
 
 use crate::code::*;
 use crate::symbol_table::SymbolTable;
@@ -76,7 +76,7 @@ impl Lines {
         Lines{line_number: 0, lines: lines}
     }
 
-    pub fn to_binary(&self, symbol_table: SymbolTable) -> Vec<String> {
+    pub fn to_binary(&self, symbol_table: &SymbolTable) -> Vec<String> {
         let mut binaries = Vec::new();
         for line in &self.lines {
             match line {

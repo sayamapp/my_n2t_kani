@@ -1,4 +1,4 @@
-use std::{collections::HashMap, mem::forget};
+use std::collections::HashMap;
 #[derive(Debug)]
 pub struct SymbolTable(HashMap<String, usize>);
 impl SymbolTable {
