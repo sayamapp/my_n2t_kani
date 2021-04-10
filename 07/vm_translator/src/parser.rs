@@ -26,6 +26,9 @@ impl CommandType {
             match word {
                 "push" => {
                     CommandType::CPush(words[1].to_string(), words[2].parse::<usize>().unwrap())
+                },
+                "pop" => {
+                    CommandType::CPop(words[1].to_string(), words[2].parse::<usize>().unwrap())
                 }
                 "add" => CommandType::CArithmetic(words[0].to_string()),
                 "eq" => CommandType::CArithmetic(words[0].to_string()),
