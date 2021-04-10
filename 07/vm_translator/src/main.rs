@@ -7,8 +7,8 @@ use crate::code_writer::CodeWriter;
 
 
 fn main() {
-    let input_file_path = "../MemoryAccess/BasicTest/BasicTest.vm";
-    let output_file_path = "../MemoryAccess/BasicTest/BasicTest.asm";
+    let input_file_path = "../MemoryAccess/StaticTest/StaticTest.vm";
+    let output_file_path = "../MemoryAccess/StaticTest/StaticTest.asm";
     // let input_file_path = "../StackArithmetic/StackTest/StackTest.vm";
     // let output_file_path = "../StackArithmetic/StackTest/StackTest.asm";
     let mut parser = Parser::new(input_file_path);

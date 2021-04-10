@@ -6,13 +6,17 @@ use std::{
 use crate::parser::CommandType;
 
 use crate::binary_function;
-use crate::unary_function;
 use crate::logic_command;
-use crate::push;
 use crate::pop;
-use crate::push_to;
+use crate::pop_pointer;
+use crate::pop_static;
 use crate::pop_to;
+use crate::push;
 use crate::push_constant;
+use crate::push_pointer;
+use crate::push_static;
+use crate::push_to;
+use crate::unary_function;
 
 pub struct CodeWriter {
     file_name: String,
@@ -70,7 +74,10 @@ impl CodeWriter {
                     "that" => self.commands.push(push_to!("@THAT", &index)),
                     "this" => self.commands.push(push_to!("@THIS", &index)),
                     "temp" => self.commands.push(push_to!("@TEMP", &index)),
-                    _ => {},
+
+                    "pointer" => self.commands.push(push_pointer!(index + 3)),
+                    "static" => self.commands.push(push_pointer!(index + 16)),
+                    _ => {}
                 }
             }
             CommandType::CPop(segment, index) => {
@@ -81,7 +88,10 @@ impl CodeWriter {
                     "this" => self.commands.push(pop_to!("@THIS", &index)),
                     "that" => self.commands.push(pop_to!("@THAT", &index)),
                     "temp" => self.commands.push(pop_to!("@TEMP", &index)),
-                    _ => {},
+
+                    "pointer" => self.commands.push(pop_pointer!(index + 3)),
+                    "static" => self.commands.push(pop_pointer!(index + 16)),
+                    _ => {}
                 }
             }
             _ => {}
@@ -98,7 +108,6 @@ impl CodeWriter {
         file.flush().unwrap();
     }
 }
-
 
 #[macro_export]
 macro_rules! pop {
@@ -118,15 +127,9 @@ macro_rules! push {
 macro_rules! push_constant {
     ($n: expr) => {{
         let n: &str = &format!("@{}", $n);
-        let commands = vec![
-            n,
-            "D=A",
-            push!(),
-        ];
+        let commands = vec![n, "D=A", push!()];
         commands.join("\n")
-    }
-        
-    };
+    }};
 }
 
 #[macro_export]
@@ -134,7 +137,7 @@ macro_rules! pop_to {
     ($dist: expr, $idx: expr) => {{
         let index = format!("@{}", $idx);
         let commands = vec![
-            if $dist == "@TEMP" {"@5\nD=A"} else {$dist},
+            if $dist == "@TEMP" { "@5\nD=A" } else { $dist },
             "D=M",
             &index,
             "D=D+A",
@@ -158,8 +161,12 @@ macro_rules! push_to {
     ($dist: expr, $idx: expr) => {{
         let index = format!("@{}", $idx);
         let commands = vec![
-            $dist, 
-            if $dist == "@TEMP" {"@5\nD=A"} else {"A=M\nD=A"},
+            $dist,
+            if $dist == "@TEMP" {
+                "@5\nD=A"
+            } else {
+                "A=M\nD=A"
+            },
             &index,
             "D=D+A",
             "A=D",
@@ -167,9 +174,47 @@ macro_rules! push_to {
             push!(),
         ];
         commands.join("\n")
-    }
-        
-    };
+    }};
+}
+
+#[macro_export]
+macro_rules! pop_pointer {
+    ($idx: expr) => {{
+        let index = format!("@{}", if $idx == &&0 { 3 } else { 4 });
+        let commands = vec![pop!(), "D=M", &index, "M=D"];
+        commands.join("\n")
+    }};
+}
+
+#[macro_export]
+macro_rules! pop_static {
+    ($idx: expr) => {{
+        let index = format!("@{}", *$idx + 16);
+        let commands = vec![pop!(), "D=M", &index, "M=D"];
+        commands.join("\n")
+    }};
+}
+
+#[macro_export]
+macro_rules! push_static {
+    ($idx: expr) => {{
+        let index = format!("@{}", *$idx + 16);
+        let commands: Vec<&str> = vec![
+            &index,
+            "D=M",
+            push!(),
+        ];
+        commands.join("\n")
+    }};
+}
+
+#[macro_export]
+macro_rules! push_pointer {
+    ($idx: expr) => {{
+        let index = format!("@{}", if $idx == &&0 { 3 } else { 4 });
+        let commands: Vec<&str> = vec![&index, "D=M", push!()];
+        commands.join("\n")
+    }};
 }
 
 #[macro_export]
