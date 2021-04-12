@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::{ffi::OsString, fs::File};
 use std::io::Read;
 
 #[derive(Debug)]
@@ -12,9 +12,9 @@ pub enum CommandType {
     CArithmetic(String),
     CPush(String, usize),
     CPop(String, usize),
-    CLabel,
-    CGoto,
-    CIf,
+    CLabel(String),
+    CGoto(String),
+    CIf(String),
     CFunction(String, usize),
     CReturn,
     CCall(String, usize),
@@ -39,6 +39,15 @@ impl CommandType {
                 "and" => CommandType::CArithmetic(words[0].to_string()),
                 "or" => CommandType::CArithmetic(words[0].to_string()),
                 "not" => CommandType::CArithmetic(words[0].to_string()),
+
+                "function" => CommandType::CFunction(words[1].to_string(), words[2].parse::<usize>().unwrap()),
+                "return" => CommandType::CReturn,
+                "label" => CommandType::CLabel(words[1].to_string()),
+                "goto" => CommandType::CGoto(words[1].to_string()),
+                
+                "call" => CommandType::CCall(words[1].to_string(), words[2].parse::<usize>().unwrap()),
+
+                "if-goto" => CommandType::CIf(words[1].to_string()),
                 _ => CommandType::NotCommand,
             }
         } else {
