@@ -3,12 +3,15 @@ use std::io::Read;
 
 #[derive(Debug)]
 pub struct Parser {
+    name: String,
     lines: Vec<String>,
     idx: usize,
 }
 impl Parser {
     pub fn new(path: &str) -> Self {
         let mut file = File::open(path).expect("File not found!");
+        let class_name = path.split("/").collect::<Vec<&str>>().pop().unwrap();
+        println!("___ {}", class_name);
         let mut strings = String::new();
         file.read_to_string(&mut strings)
             .expect("Something went wrong reading the file!");
@@ -18,6 +21,7 @@ impl Parser {
             .map(|str| str.to_string())
             .collect::<Vec<String>>();
         Parser {
+            name: class_name.to_string(),
             lines: test,
             idx: 0,
         }
@@ -35,7 +39,7 @@ impl Parser {
         let line = self.lines.get(self.idx).unwrap();
         let line = line.split("//").collect::<Vec<&str>>();
         let words = line[0].split_whitespace().collect::<Vec<&str>>();
-        CommandType::new(words)
+        CommandType::new(self.name.clone(), words)
     }
 }
 
@@ -54,8 +58,8 @@ pub enum Arithmetic {
 #[derive(Debug, Eq, PartialEq)]
 pub enum CommandType {
     CArithmetic(Arithmetic),
-    CPush(String, usize),
-    CPop(String, usize),
+    CPush(String, String, usize),
+    CPop(String, String, usize),
     CLabel(String),
     CGoto(String),
     CIf(String),
@@ -65,7 +69,7 @@ pub enum CommandType {
     NotCommand,
 }
 impl CommandType {
-    fn new(words: Vec<&str>) -> Self {
+    fn new(class_name: String, words: Vec<&str>) -> Self {
         println!("PARSER {:?}", words);
         match &words.len() {
             1 => {
@@ -99,8 +103,8 @@ impl CommandType {
                 let arg1 = words[1].to_string();
                 let arg2: Result<usize, _> = words[2].parse();
                 match command {
-                    "push"      => CommandType::CPush(arg1, arg2.unwrap()),
-                    "pop"       => CommandType::CPop(arg1, arg2.unwrap()),
+                    "push"      => CommandType::CPush(class_name, arg1, arg2.unwrap()),
+                    "pop"       => CommandType::CPop(class_name, arg1, arg2.unwrap()),
                     "function"  => CommandType::CFunction(arg1, arg2.unwrap()),
                     "call"      => CommandType::CCall(arg1, arg2.unwrap()),
                     _ => CommandType::NotCommand,

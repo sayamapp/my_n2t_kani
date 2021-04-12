@@ -11,8 +11,8 @@ use crate::parser::Parser;
 use std::fs;
 
 fn main() {
-    let input_file_path = "../FunctionCalls/StaticsTest/";
-    let output_file_path = "../FunctionCalls/StaticsTest/StaticsTest.asm";
+    let input_file_path = "../FunctionCalls/NestedCall/";
+    let output_file_path = "../FunctionCalls/NestedCall/NestedCall.asm";
 
     let mut code_writer = CodeWriter::new(output_file_path);
     code_writer.write_init();
@@ -35,9 +35,9 @@ fn main() {
                                 CommandType::CArithmetic(arithmetic) => 
                                     code_writer.write_arithmetic(arithmetic),
 
-                                CommandType::CPush(_, _) => 
+                                CommandType::CPush(_, _, _) => 
                                     code_writer.write_push_pop(command),
-                                CommandType::CPop(_, _) => 
+                                CommandType::CPop(_, _, _) => 
                                     code_writer.write_push_pop(command),
 
                                 CommandType::CLabel(label) => 
