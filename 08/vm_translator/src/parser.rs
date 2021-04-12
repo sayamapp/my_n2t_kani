@@ -1,4 +1,4 @@
-use std::{ffi::OsString, fs::File};
+use std::fs::File;
 use std::io::Read;
 
 #[derive(Debug)]
@@ -6,56 +6,6 @@ pub struct Parser {
     lines: Vec<String>,
     idx: usize,
 }
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum CommandType {
-    CArithmetic(String),
-    CPush(String, usize),
-    CPop(String, usize),
-    CLabel(String),
-    CGoto(String),
-    CIf(String),
-    CFunction(String, usize),
-    CReturn,
-    CCall(String, usize),
-    NotCommand,
-}
-impl CommandType {
-    fn new(words: Vec<&str>) -> Self {
-        if let Some(&word) = words.get(0) {
-            match word {
-                "push" => {
-                    CommandType::CPush(words[1].to_string(), words[2].parse::<usize>().unwrap())
-                },
-                "pop" => {
-                    CommandType::CPop(words[1].to_string(), words[2].parse::<usize>().unwrap())
-                }
-                "add" => CommandType::CArithmetic(words[0].to_string()),
-                "eq" => CommandType::CArithmetic(words[0].to_string()),
-                "lt" => CommandType::CArithmetic(words[0].to_string()),
-                "gt" => CommandType::CArithmetic(words[0].to_string()),
-                "sub" => CommandType::CArithmetic(words[0].to_string()),
-                "neg" => CommandType::CArithmetic(words[0].to_string()),
-                "and" => CommandType::CArithmetic(words[0].to_string()),
-                "or" => CommandType::CArithmetic(words[0].to_string()),
-                "not" => CommandType::CArithmetic(words[0].to_string()),
-
-                "function" => CommandType::CFunction(words[1].to_string(), words[2].parse::<usize>().unwrap()),
-                "return" => CommandType::CReturn,
-                "label" => CommandType::CLabel(words[1].to_string()),
-                "goto" => CommandType::CGoto(words[1].to_string()),
-                
-                "call" => CommandType::CCall(words[1].to_string(), words[2].parse::<usize>().unwrap()),
-
-                "if-goto" => CommandType::CIf(words[1].to_string()),
-                _ => CommandType::NotCommand,
-            }
-        } else {
-            CommandType::NotCommand
-        }
-    }
-}
-
 impl Parser {
     pub fn new(path: &str) -> Self {
         let mut file = File::open(path).expect("File not found!");
@@ -88,3 +38,76 @@ impl Parser {
         CommandType::new(words)
     }
 }
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum Arithmetic {
+    Add,
+    Sub,
+    And,
+    Or,
+    Not,
+    Neg,
+    Eq,
+    Lt,
+    Gt,
+}
+#[derive(Debug, Eq, PartialEq)]
+pub enum CommandType {
+    CArithmetic(Arithmetic),
+    CPush(String, usize),
+    CPop(String, usize),
+    CLabel(String),
+    CGoto(String),
+    CIf(String),
+    CFunction(String, usize),
+    CReturn,
+    CCall(String, usize),
+    NotCommand,
+}
+impl CommandType {
+    fn new(words: Vec<&str>) -> Self {
+        println!("PARSER {:?}", words);
+        match &words.len() {
+            1 => {
+                let command = words[0];
+                match command {
+                    "add"   => CommandType::CArithmetic(Arithmetic::Add),
+                    "sub"   => CommandType::CArithmetic(Arithmetic::Sub),
+                    "and"   => CommandType::CArithmetic(Arithmetic::And),
+                    "or"    => CommandType::CArithmetic(Arithmetic::Or),
+                    "not"   => CommandType::CArithmetic(Arithmetic::Not),
+                    "neg"   => CommandType::CArithmetic(Arithmetic::Neg),
+                    "eq"    => CommandType::CArithmetic(Arithmetic::Eq),
+                    "lt"    => CommandType::CArithmetic(Arithmetic::Lt),
+                    "gt"    => CommandType::CArithmetic(Arithmetic::Gt),
+                    "return"=> CommandType::CReturn,
+                    _ => CommandType::NotCommand,
+                }
+            },
+            2 => {
+                let command = words[0];
+                let arg = words[1].to_string();
+                match command {
+                    "label"     => CommandType::CLabel(arg),
+                    "goto"      => CommandType::CGoto(arg),
+                    "if-goto"   => CommandType::CIf(arg),
+                    _ => CommandType::NotCommand,
+                }
+            },
+            3 => {
+                let command = words[0];
+                let arg1 = words[1].to_string();
+                let arg2: Result<usize, _> = words[2].parse();
+                match command {
+                    "push"      => CommandType::CPush(arg1, arg2.unwrap()),
+                    "pop"       => CommandType::CPop(arg1, arg2.unwrap()),
+                    "function"  => CommandType::CFunction(arg1, arg2.unwrap()),
+                    "call"      => CommandType::CCall(arg1, arg2.unwrap()),
+                    _ => CommandType::NotCommand,
+                }
+            },
+            _ => CommandType::NotCommand
+        }
+    }
+}
+

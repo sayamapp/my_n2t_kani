@@ -1,21 +1,18 @@
 mod code_writer;
 mod parser;
+
+
+
 use parser::CommandType;
 
 use crate::code_writer::CodeWriter;
 use crate::parser::Parser;
 
 use std::fs;
-use std::path::Path;
 
 fn main() {
-    let input_file_path = "./FunctionCalls/SimpleFunction/SimpleFunction.vm";
-    let output_file_path = "./FunctionCalls/SimpleFunction/SimpleFunction.asm";
-    // let input_file_path = "../StackArithmetic/StackTest/StackTest.vm";
-    // let output_file_path = "../StackArithmetic/StackTest/StackTest.asm";
-
-    let input_file_path = "./FunctionCalls/FibonacciElement/";
-    let output_file_path = "./FunctionCalls/FibonacciElement/FibonacciElement.asm";
+    let input_file_path = "../FunctionCalls/StaticsTest/";
+    let output_file_path = "../FunctionCalls/StaticsTest/StaticsTest.asm";
 
     let mut code_writer = CodeWriter::new(output_file_path);
     code_writer.write_init();
@@ -34,24 +31,32 @@ fn main() {
                         while parser.has_more_commands() {
                             let command = parser.command_type();
 
-                            match &command {
-                                CommandType::CArithmetic(_) => {
-                                    code_writer.write_arithmetic(&command)
-                                }
-                                CommandType::CPush(_, _) => code_writer.write_push_pop(&command),
-                                CommandType::CPop(_, _) => code_writer.write_push_pop(&command),
-                                CommandType::CLabel(_) => code_writer.write_label(&command),
-                                CommandType::CGoto(_) => code_writer.write_goto(&command),
-                                CommandType::CIf(_) => code_writer.write_if(&command),
-                                CommandType::CFunction(_, _) => {
-                                    code_writer.write_function(&command)
-                                }
-                                CommandType::CReturn => code_writer.write_return(),
-                                CommandType::CCall(_, _) => code_writer.write_call(&command),
+                            match command {
+                                CommandType::CArithmetic(arithmetic) => 
+                                    code_writer.write_arithmetic(arithmetic),
+
+                                CommandType::CPush(_, _) => 
+                                    code_writer.write_push_pop(command),
+                                CommandType::CPop(_, _) => 
+                                    code_writer.write_push_pop(command),
+
+                                CommandType::CLabel(label) => 
+                                    code_writer.write_label(label),
+                                CommandType::CGoto(label) => 
+                                    code_writer.write_goto(label),
+                                CommandType::CIf(label) => 
+                                    code_writer.write_if(label),
+
+                                CommandType::CFunction(f, n) => 
+                                    code_writer.write_function(f, n),
+                                CommandType::CReturn => 
+                                    code_writer.write_return(),
+                                CommandType::CCall(f, n) => 
+                                    code_writer.write_call(f, n),
+
                                 CommandType::NotCommand => {}
                             }
-
-                            println!("{:?}", command);
+                            
                             parser.advance();
                         }
                     }
