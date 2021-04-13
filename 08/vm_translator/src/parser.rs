@@ -8,21 +8,22 @@ pub struct Parser {
     idx: usize,
 }
 impl Parser {
-    pub fn new(path: &str) -> Self {
-        let mut file = File::open(path).expect("File not found!");
-        let class_name = path.split("/").collect::<Vec<&str>>().pop().unwrap();
+    pub fn new(path: &str, name: &str) -> Self {
+        let file_name = format!("{}{}", path, name);
+        let mut file = File::open(file_name).expect("File not found!");
+        let class_name = name.strip_suffix(".vm").unwrap();
         println!("___ {}", class_name);
         let mut strings = String::new();
         file.read_to_string(&mut strings)
             .expect("Something went wrong reading the file!");
 
-        let test = strings
+        let lines = strings
             .split('\n')
             .map(|str| str.to_string())
             .collect::<Vec<String>>();
         Parser {
             name: class_name.to_string(),
-            lines: test,
+            lines: lines,
             idx: 0,
         }
     }
