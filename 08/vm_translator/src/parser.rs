@@ -12,7 +12,7 @@ impl Parser {
         let file_name = format!("{}{}", path, name);
         let mut file = File::open(file_name).expect("File not found!");
         let class_name = name.strip_suffix(".vm").unwrap();
-        println!("___ {}", class_name);
+        println!("Class name -> {}", class_name);
         let mut strings = String::new();
         file.read_to_string(&mut strings)
             .expect("Something went wrong reading the file!");
