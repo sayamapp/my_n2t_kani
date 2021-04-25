@@ -1,0 +1,53 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/09/HelloWorld/Main.jack
+
+/** Hello World program. */
+class Main {
+
+   function void main() {
+      var Game game;
+      let game = Game.new();
+
+      while (true) {
+         do game.update();
+      }
+      return;
+   }
+   // function void main() {
+   //    /* Prints some text using the standard library. */
+   //    var char key;
+   //    var Player player;
+   //    var Block block;
+   //    var Array blocks;
+   //    var int i;
+
+   //    let player = Player.new(10, 100, 10);
+   //    let block = Block.new(100, 100);
+   //    let blocks = Array.new(2);
+
+   //    let i = 2;
+   //    while(i > 0) {
+   //       let blocks[i - 1] = Block.new(i * 10, i * 10);
+   //       let i = i - 1;
+   //    }
+
+   //    while (true) {
+   //       do player.update();
+
+   //       let i = 2;
+   //       while(i > 0) {
+   //          let block = blocks[i - 1];
+   //          do block.update();
+   //          let i = i - 1;
+   //       }
+
+   //       let key = Keyboard.keyPressed();
+   //       if (key = 131) {do player.changeSpeed(-10);}
+   //       if (key = 133) {do player.changeSpeed(10);}
+
+   //    }
+   //    return;
+   // }
+}

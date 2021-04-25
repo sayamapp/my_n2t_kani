@@ -1,0 +1,49 @@
+class Block {
+    field int sx, sy;
+    field int gx, gy;
+
+    constructor Block new(int x, int y) {
+        let sx = x;
+        let sy = y;
+        let gx = sx + 100;
+        let gy = sy + 100;
+        do draw();
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void draw() {
+        do Screen.setColor(true);
+        do Screen.drawRectangle(sx, sy, gx, gy);
+        return;
+    }
+
+    method void erace() {
+        do Screen.setColor(false);
+        do Screen.drawRectangle(sx, sy, gx, gy);
+        return;
+    }
+
+    method void update() {
+        do erace();
+
+        if (sx > 0) {
+            let sx = sx - 1;
+        } else {
+            let sx = 0;
+        }
+        if (gx > 1) {
+            let gx = gx - 1;
+        } else {
+            do dispose();
+        }
+
+        do draw();
+        return;
+    }
+
+}

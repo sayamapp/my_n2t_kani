@@ -33,3 +33,12 @@ nand2tetris/
 08/vm_translator/target
 08/FunctionCalls
 08/ProgramFlow
+
+09/Average
+09/BitmapEditor
+09/Fraction
+09/HelloWorld
+09/List
+09/OS
+09/Square
+09/*/*.vm

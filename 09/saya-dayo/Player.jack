@@ -1,0 +1,52 @@
+class Player {
+
+    field int x, y;
+    field int r;
+    field int speed;
+
+    constructor Player new(int Ax, int Ay, int Ar) {
+        let x = Ax;
+        let y = Ay;
+        let r = Ar;
+        let speed = 0;
+        do draw();
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void draw() {
+        do Screen.setColor(true);
+        do Screen.drawCircle(x, y, r);
+        return;
+    }
+
+    method void erace() {
+        do Screen.setColor(false);
+        do Screen.drawCircle(x, y, r);
+        return;
+    }
+
+    method void update() {
+        do Sys.wait(10);
+        do erace();
+        let y = nextPos();
+        do draw();
+        return;
+    }
+
+    method void changeSpeed(int s) {
+        let speed = speed + s;
+        return;
+    }
+
+    method int nextPos() {
+        var int dy;
+        let dy = y + (speed / 10);
+        return dy;
+    }
+
+}
