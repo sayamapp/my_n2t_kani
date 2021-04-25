@@ -1,0 +1,61 @@
+class Pos {
+    field int x, y;
+    field int d;
+    field int speed;
+
+    constructor Pos new(int ax, int ay, int s) {
+        let x = ax;
+        let y = ay;
+        let speed = s;
+        return this;
+    }
+
+    method void addSpeed(int s) {
+        let speed = speed + s;
+        return;
+    }
+
+    method int getX() {
+        return x;
+    }
+
+    method int getY() {
+        return y;
+    }
+
+    method void next() {
+        if (d = 0) {
+            if (x - speed < 0) {
+                let x = 0;
+                let d = 1;
+            } else {
+                let x = x - speed;
+            }
+        }
+        if (d = 1) {
+            if (y - speed < 0) {
+                let y = 0;
+                let d = 2;
+            } else {
+                let y = y - speed;
+            }
+        }
+        if (d = 2) {
+            if (x + speed > 511) {
+                let x = 511;
+                let d = 3;
+            } else {
+                let x = x + speed;
+            } 
+        }
+        if (d = 3) {
+            if (y + speed > 255) {
+                let y = 255;
+                let d = 0;
+            } else {
+                let y = y + speed;
+            }
+        }
+        return;
+    }
+}

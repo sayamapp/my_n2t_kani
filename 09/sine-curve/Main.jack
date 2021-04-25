@@ -1,0 +1,34 @@
+class Main {
+    function void main() {
+        var Pos a, b, c, d;
+        var int timer;
+        let a = Pos.new(0, 0, 3);
+        let b = Pos.new(511, 255, 7);
+        let c = Pos.new(0, 0, 7);
+        let d = Pos.new(511, 255, 11);
+        let timer = 0;
+
+        while (true) {
+            do a.next();
+            do b.next();
+            do c.next();
+            do d.next();
+            do Screen.setColor(true);
+            do Screen.drawLine(a.getX(), a.getY(), b.getX(), b.getY());
+            do Screen.setColor(false);
+            do Screen.drawLine(c.getX(), c.getY(), d.getX(), d.getY());
+
+            if (timer > 100) {
+                do Screen.clearScreen();
+                let timer = 0;
+                do a.addSpeed(5);
+                do b.addSpeed(7);
+                do c.addSpeed(11);
+                do d.addSpeed(3);
+            } else {
+                let timer = timer + 1;
+            }
+        }
+        return;
+    }
+}
