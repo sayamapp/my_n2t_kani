@@ -1,4 +1,4 @@
-use std::fs;
+use std::{char::ToLowercase, fs};
 use crate::jack_tokenizer::JackTokenizer;
 
 pub fn analyze(args: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -8,6 +8,7 @@ pub fn analyze(args: &str) -> Result<(), Box<dyn std::error::Error>> {
         let content = fs::read_to_string(&jack_filepath)?;
 
         let tokenizer = JackTokenizer::new(content);
+
     }
     Ok(())
 }
