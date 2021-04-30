@@ -1,5 +1,5 @@
-use std::{fs::{self, File}, io::{BufWriter, Write}, path::{Path, PathBuf}};
-use crate::jack_tokenizer::{JackTokenizer, Tokens};
+use std::{fs::{self, File}, io::{BufWriter, Write}, path:: PathBuf};
+use crate::{compilation_engine::CompilationEngine, jack_tokenizer::{JackTokenizer, Tokens}};
 
 
 pub fn analyze(args: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -8,7 +8,9 @@ pub fn analyze(args: &str) -> Result<(), Box<dyn std::error::Error>> {
         let content = fs::read_to_string(&file_pathes.input_files[i])?;
 
         let tokenizer = JackTokenizer::new(content);
-        let tokens = Tokens::new(tokenizer);
+        let mut tokens = Tokens::new(tokenizer);
+        let mut output = CompilationEngine::compile(&mut tokens);
+
         let vec_xml = tokens.get_xml();
 
         let mut buf_writer = 

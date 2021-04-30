@@ -1,3 +1,6 @@
+use core::panic;
+use std::ops::Deref;
+
 use regex::Regex;
 #[derive(Debug)]
 pub struct JackTokenizer {
@@ -18,7 +21,10 @@ impl JackTokenizer {
 }
 
 #[derive(Debug)]
-pub struct Tokens(Vec<Token>);
+pub struct Tokens{
+    tokens: Vec<Token>,
+    idx: usize,
+}
 impl Tokens {
     pub fn new(jtn: JackTokenizer) -> Self {
         let mut tokens = Vec::new();
@@ -30,21 +36,40 @@ impl Tokens {
             }
             tokens.push(token);
         }
-        Tokens(tokens)
+        Tokens {
+            tokens: tokens,
+            idx: 0,
+        }
     }
     pub fn get_xml(&self) -> Vec<String> {
         let mut xmls = Vec::new();
         xmls.push("<tokens>".to_string());
-        for token in &self.0 {
+        for token in &self.tokens {
             xmls.push(token.get_xml());
         }
         xmls.push("</tokens>".to_string());
         xmls
     }
+    pub fn advance(&mut self) -> Option<&Token> {
+        let token = self.tokens.get(self.idx);
+        if let Some(token) = token {
+            self.idx += 1;
+            Some(&token)
+        }else{
+            None
+        }
+    }
+}
+impl Deref for Tokens {
+    type Target = Vec<Token>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.tokens
+    }
 }
 
-#[derive(Debug)]
-enum Token {
+#[derive(Debug, PartialEq)]
+pub enum Token {
     TKeyword(Keyword),
     TSymbol(String),
     TIdentifier(String),
@@ -130,8 +155,8 @@ impl Token {
     }
 }
 
-#[derive(Debug)]
-enum Keyword {
+#[derive(Debug, PartialEq)]
+pub enum Keyword {
     Class,
     Method,
     Function,

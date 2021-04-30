@@ -1,7 +1,9 @@
 mod jack_analyzer;
 mod jack_tokenizer;
+mod compilation_engine;
 
-use std::{env, fs, path::PathBuf};
+use std::env;
+use std::path::PathBuf;
 fn main() {
     let args: Vec<String> = env::args().collect();
     jack_analyzer::analyze(&args[1]);
