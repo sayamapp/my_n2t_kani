@@ -20,7 +20,7 @@ impl JackTokenizer {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Tokens{
     tokens: Vec<Token>,
     idx: usize,
@@ -50,14 +50,21 @@ impl Tokens {
         xmls.push("</tokens>".to_string());
         xmls
     }
-    pub fn advance(&mut self) -> Option<&Token> {
+    pub fn advance(&mut self) -> Option<Token> {
         let token = self.tokens.get(self.idx);
         if let Some(token) = token {
             self.idx += 1;
-            Some(&token)
+            Some(token.clone())
         }else{
             None
         }
+    }
+    pub fn back(&mut self) {
+        self.idx -= 1;
+    }
+    pub fn peek(&self) -> Option<&Token> {
+        let res = self.tokens.get(self.idx);
+        res
     }
 }
 impl Deref for Tokens {
@@ -68,7 +75,7 @@ impl Deref for Tokens {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     TKeyword(Keyword),
     TSymbol(String),
@@ -155,7 +162,7 @@ impl Token {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Keyword {
     Class,
     Method,

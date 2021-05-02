@@ -9,9 +9,11 @@ pub fn analyze(args: &str) -> Result<(), Box<dyn std::error::Error>> {
 
         let tokenizer = JackTokenizer::new(content);
         let mut tokens = Tokens::new(tokenizer);
-        let mut output = CompilationEngine::compile(&mut tokens);
+        let mut compilation_engine = CompilationEngine::new();
+        let mut output = compilation_engine.compile(&mut tokens);
 
-        let vec_xml = tokens.get_xml();
+        // let vec_xml = tokens.get_xml();
+        let vec_xml = output;
 
         let mut buf_writer = 
             BufWriter::new(File::create(&file_pathes.output_files[i]).unwrap());
