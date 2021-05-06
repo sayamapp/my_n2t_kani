@@ -49,3 +49,14 @@ nand2tetris/
 10/jack_analyzer/target
 10/jack_analyzer/testcase
 10/jack_analyzer/.vscode
+
+11/compiler
+11/compiler/target
+11/compiler/testdir
+11/Average
+11/ComplexArrays
+11/ConvertToBin
+11/OS
+11/Pong
+11/Seven
+11/Square
