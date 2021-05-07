@@ -1,4 +1,5 @@
-use std::{fs, ops::Deref, str};
+use std::fs;
+use std::ops::Deref;
 use std::path::PathBuf;
 use regex::Regex;
 
