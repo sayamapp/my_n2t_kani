@@ -43,12 +43,10 @@ nand2tetris/
 09/Square
 09/*/*.vm
 
-10/ArrayTest
-10/ExpressionLessSquare
 10/Square
 10/jack_analyzer/target
 10/jack_analyzer/testcase
-10/jack_analyzer/.vscode
+10/jack_analyzer/origin
 
 11/compiler
 11/compiler/target
