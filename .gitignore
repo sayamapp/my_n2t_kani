@@ -48,7 +48,6 @@ nand2tetris/
 10/jack_analyzer/testcase
 10/jack_analyzer/origin
 
-11/compiler
 11/compiler/target
 11/compiler/testdir
 11/Average
