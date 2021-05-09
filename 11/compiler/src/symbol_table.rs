@@ -83,9 +83,9 @@ impl SymbolTable {
         }
     }
 
-    pub fn type_of(&self, name: &str) -> Option<&str> {
+    pub fn type_of(&self, name: &str) -> Option<String> {
         if let Some(var) = self.get_variable(name) {
-            Some(&var.var_type)
+            Some(var.var_type.to_string())
         } else {
             None
         }
@@ -99,7 +99,6 @@ impl SymbolTable {
         }
     }
 
-
     fn get_variable(&self, name: &str) -> Option<&JackVariable> {
         if self.class_table.contains_key(name) {
             self.class_table.get(name)
@@ -107,8 +106,25 @@ impl SymbolTable {
             self.subroutine_table.get(name)
         }
     }
+
+    pub fn debug_print_class_table(&self) {
+        println!("*** CLASS VARIABLES *** ");
+        for class in &self.class_table {
+            println!("{:?}", class);
+        }
+        println!();
+    }
+    
+    pub fn debug_print_subroutine_table(&self) {
+        println!("*** SUBROUTINE VARIABLES ***");
+        for subroutine in &self.subroutine_table {
+            println!("{:?}", subroutine);
+        }
+        println!();
+    }
 }
 
+#[derive(Debug)]
 struct JackVariable {
     var_type: String,
     var_kind: VarKind,
@@ -121,5 +137,15 @@ pub enum VarKind {
     Field,
     Argument,
     Var,
+}
+impl VarKind {
+    pub fn to_string(&self) -> String {
+        match self {
+            VarKind::Static => "static".to_string(),
+            VarKind::Field => "this".to_string(),
+            VarKind::Argument => "argument".to_string(),
+            VarKind::Var => "local".to_string(),
+        }
+    }
 }
 

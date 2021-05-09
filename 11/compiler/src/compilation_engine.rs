@@ -1,415 +1,371 @@
-use crate::jack_tokenizer::{Keyword, TokenData, Tokenizer};
+use std::mem::forget;
 
+use crate::{
+    jack_tokenizer::{Keyword, TokenData, Tokenizer},
+    symbol_table::{SymbolTable, VarKind},
+    vm_writer::VMWriter,
+};
 pub struct CompilationEngine {
     tokenizer: Tokenizer,
-    xml: Vec<String>,
-    depth: usize,
+    symbol_table: SymbolTable,
+    vm_writer: VMWriter,
+    class_name: String,
+    label_index: usize,
+    is_void: bool,
 }
+
 impl CompilationEngine {
     pub fn new(tokenizer: Tokenizer) -> Self {
-        let xml: Vec<String> = Vec::new();
         CompilationEngine {
-            tokenizer,
-            xml,
-            depth: 0,
+            tokenizer: tokenizer,
+            symbol_table: SymbolTable::new(),
+            vm_writer: VMWriter::new(),
+            class_name: String::new(),
+            label_index: 0,
+            is_void: false,
         }
     }
-    
-    fn push_xml_this_token(&mut self) {
-        self.push_xml(&self.get_xml());
-        self.advance();
-    }
 
-    fn push_xml(&mut self, str: &str) {
-        let mut space = String::new();
-        for _ in 0..self.depth {
-            space += "  ";
-        }
-        self.xml.push(format!("{}{}", space, str));
-    }
-    fn advance(&mut self) {
-        self.tokenizer.advance();
-    }
-    fn get_xml(&self) -> String {
-        self.tokenizer.get_xml()
-    }
-    fn get_token(&self) -> &Option<TokenData> {
-        self.tokenizer.get_token()
-    }
-    fn peek_token(&self) -> Option<TokenData> {
-        self.tokenizer.peek_token()
-    }
-    fn inc_tab(&mut self) {
-        self.depth += 1;
-    }
-    fn dec_tab(&mut self) {
-        self.depth -= 1;
-    }
-
-    pub fn output_xml(&self) -> Vec<String> {
-        self.xml.clone()
-    }
-
-    pub fn debug_xml(&self) {
-        for xml in &self.xml {
-            println!("{}", xml);
-        }
-    }
-    
     pub fn start_compile(&mut self) {
-        self.tokenizer.advance();
+        self.advance();
         self.compile_class();
     }
 
     fn compile_class(&mut self) {
-        self.push_xml("<class>");
-        self.inc_tab();
-        // class className {
-        self.push_xml_this_token();
-        self.push_xml_this_token();
-        self.push_xml_this_token();
-        // classVarDec*
-        while self.is_class_var_dec() { self.compile_class_var_dec(); }
-        // subroutineDec*
-        while self.is_subroutine_dec() {self.compile_subroutine(); }
-        // }
-        self.push_xml_this_token();
+        println!("FUNCTION: COMPILE_CLASS");
+        // class className '{'
+        self.advance();
+        self.set_class_name();
+        self.advance();
+        self.advance();
 
-        self.dec_tab();
-        self.push_xml("</class>");
-        self.push_xml("");
+        // classVarDec*
+        while self.is_class_var_dec() {
+            self.compile_class_var_dec();
+        }
+
+        // subroutineDec*
+        while self.is_subroutine_dec() {
+            self.compile_subroutine();
+        }
+
+        // '}'
+        self.advance();
     }
 
     fn compile_class_var_dec(&mut self) {
-        self.push_xml("<classVarDec>");
-        self.inc_tab();
+        self.debug_print_this_token("FUNCTION: COMPILE_CLASS_VAR_DEC");
 
+        // attribute type varName
+        if let Some(TokenData::TKeyword(keyword)) = self.get_token() {
+            let v_attribute = match keyword {
+                Keyword::Static => VarKind::Static,
+                Keyword::Field => VarKind::Field,
+                _ => panic!("ERROR: not attribute"),
+            };
+            self.advance();
+            let v_type = self.get_var_type();
+            self.advance();
+            let v_name = self.get_identifier();
+            self.symbol_table.define(&v_name, &v_type, &v_attribute);
+            self.advance();
 
-        // attribute type varname 
-        self.push_xml_this_token();
-        self.push_xml_this_token();
-        self.push_xml_this_token();
-
-        // (',' type varName)*
-        while !self.is_semicolon() {
-            self.push_xml_this_token();
+            // (',' varName)*
+            while !self.is_semicolon() {
+                if self.is_comma() {
+                    self.advance();
+                }
+                let v_name = self.get_identifier();
+                self.symbol_table.define(&v_name, &v_type, &v_attribute);
+                self.advance();
+            }
         }
 
-        // ;
-        self.push_xml_this_token();
+        // ';'
+        self.advance();
 
-        self.dec_tab();
-        self.push_xml("</classVarDec>")
-    }
-
-    fn compile_var_dec(&mut self) {
-        self.push_xml("<varDec>");
-        self.inc_tab();
-
-        // var type varname
-        self.push_xml_this_token();
-        self.push_xml_this_token();
-        self.push_xml_this_token();
-
-        while !self.is_semicolon() {
-            self.push_xml_this_token();
-        }
-
-        // ;
-        self.push_xml_this_token();
-
-        self.dec_tab();
-        self.push_xml("</varDec>");
+        self.debug_priint_symbol_table();
     }
 
     fn compile_subroutine(&mut self) {
-        self.push_xml("<subroutineDec>");
-        self.inc_tab();
+        println!("FUNCTION: COMPILE_SUBROUTINE");
+        self.symbol_table.startSubroutine();
 
         // attribute type subroutineName
-        self.push_xml_this_token();
-        self.push_xml_this_token();
-        self.push_xml_this_token();
+        let attribute = self.get_token().clone();
+        self.advance();
+        self.set_type();
+        self.advance();
+        let subroutine_name = self.get_identifier();
+        self.advance();
 
-        //( parameterList )
-        self.push_xml_this_token();
-        self.compile_parameter_list();
-        self.push_xml_this_token();
+        // ( parameterList )
+        self.advance();
+        let _ = self.compile_parameter_list();
+        self.advance();
 
-        // *** subroutineBody
-        self.push_xml("<subroutineBody>");
-        self.inc_tab();
-
-        // {
-        self.push_xml_this_token();
+        // '{'
+        self.advance();
 
         // varDec*
-        while self.is_var_dec() { self.compile_var_dec(); }
+        let mut n_args = 0;
+        while self.is_var_dec() {
+            n_args += self.compile_var_dec();
+        }
+
+        // vm_writer
+        self.vm_writer
+            .write_function(&self.class_name, &subroutine_name, n_args);
+
+        if attribute == Some(TokenData::TKeyword(Keyword::Constructor)) {
+            let n_args = self.symbol_table.var_count(&VarKind::Field)
+                + self.symbol_table.var_count(&VarKind::Static);
+            self.vm_writer.push(&format!("push constant {}", n_args));
+            self.vm_writer.push("call Memory.alloc 1");
+            self.vm_writer.push("pop pointer 0");
+        } else {
+            if &subroutine_name != "main" || self.class_name != "Main" {
+                self.vm_writer.write_push("argument", 0);
+                self.vm_writer.write_pop("pointer", 0);
+            }
+        }
 
         // statements
         self.compile_statements();
 
-        // }
-        self.push_xml_this_token();
-
-        self.dec_tab();
-        self.push_xml("</subroutineBody>");
-
-        self.dec_tab();
-        self.push_xml("</subroutineDec>");
+        // '}'
+        self.advance();
     }
 
-    fn compile_parameter_list(&mut self) {
-        self.push_xml("<parameterList>");
-        self.inc_tab();
-
-        // ((type varname) (',' type varname)*)?
+    fn compile_parameter_list(&mut self) -> usize {
+        // ((type varName) (',' type varName)* )?
+        let mut n_args = 0;
         while !self.is_close_paren() {
-            self.push_xml_this_token();
+            if self.is_comma() {
+                self.advance();
+            }
+
+            // type varName
+            let v_attribute = VarKind::Argument;
+            let v_type = self.get_var_type();
+            self.advance();
+            let v_name = self.get_identifier();
+            self.advance();
+            self.symbol_table.define(&v_name, &v_type, &v_attribute);
+
+            n_args += 1;
         }
 
-        self.dec_tab();
-        self.push_xml("</parameterList>");
+        n_args
+    }
+
+    fn compile_var_dec(&mut self) -> usize {
+        self.debug_print_this_token("FUNCTION: COMPILE_VAR_DEC");
+        let mut n_arg = 1;
+        // var type varName
+        let v_attribute = VarKind::Var;
+        self.advance();
+        let v_type = self.get_var_type();
+        self.advance();
+        let v_name = self.get_identifier();
+        self.advance();
+
+        self.symbol_table.define(&v_name, &v_type, &v_attribute);
+
+        while !self.is_semicolon() {
+            if self.is_comma() {
+                n_arg += 1;
+                self.advance();
+            }
+
+            let v_name = self.get_identifier();
+            self.advance();
+
+            self.symbol_table.define(&v_name, &v_type, &v_attribute);
+        }
+
+        // ';'
+        self.advance();
+
+        self.debug_priint_symbol_table();
+        n_arg
     }
 
     fn compile_statements(&mut self) {
-        self.push_xml("<statements>");
-        self.inc_tab();
-
-        // statement*
+        self.debug_print_this_token("FUNCTION: COMPILE_STATEMENTS");
+        // statements*
         while self.is_statement() {
             if let &Some(TokenData::TKeyword(keyword)) = &self.get_token() {
                 match keyword {
-                    Keyword::Let => { self.compile_let(); }
-                    Keyword::Do => { self.compile_do(); }
-                    Keyword::If => { self.compile_if(); }
-                    Keyword::While => { self.compile_while(); }
-                    Keyword::Return => { self.compile_return(); }
-                    _ => {}
+                    Keyword::Let => {
+                        self.compile_let();
+                    }
+                    Keyword::Do => {
+                        self.compile_do();
+                    }
+                    Keyword::If => {
+                        self.compile_if();
+                    }
+                    Keyword::While => {
+                        self.compile_while();
+                    }
+                    Keyword::Return => {
+                        self.compile_return();
+                    }
+                    _ => {
+                        self.terminate();
+                    }
                 }
             }
         }
-
-        self.dec_tab();
-        self.push_xml("</statements>");
     }
 
     fn compile_let(&mut self) {
-        self.push_xml("<letStatement>");
-        self.inc_tab();
+        self.debug_print_this_token("FUNCTION: COMPILE_LET");
 
         // let varName
-        self.push_xml_this_token();
-        self.push_xml_this_token();
+        self.advance();
+        let v_name = self.get_identifier();
+        self.advance();
 
-        // ('[' expression ']')?
+        // ('[' expression ']' )?
         if self.is_open_sq() {
-            self.push_xml_this_token();
+            self.advance();
             self.compile_expression();
-            self.push_xml_this_token();
+            self.advance();
         }
 
         // =
-        self.push_xml_this_token();
+        self.advance();
 
         // expression
         self.compile_expression();
 
         // ;
-        self.push_xml_this_token();
+        self.advance();
 
-        self.dec_tab();
-        self.push_xml("</letStatement>");
-    }
-
-    fn compile_expression(&mut self) {
-        self.push_xml("<expression>");
-        self.inc_tab();
-
-        // term 
-        self.compile_term();
-
-        // (op term)*
-        while self.is_op() {
-            self.push_xml_this_token();
-            self.compile_term();
-        }
-
-        self.dec_tab();
-        self.push_xml("</expression>");
-    }
-
-    fn compile_term(&mut self) {
-        self.push_xml("<term>");
-        self.inc_tab();
-
-        // integerConstant
-        if self.is_integer_constant() { 
-            self.push_xml_this_token(); 
-        }
-
-        // stringConstant
-        else if self.is_string_constant() {
-            self.push_xml_this_token(); 
-        }
-
-        // keywordConstant
-        else if self.is_keyword_constant() {
-            self.push_xml_this_token(); 
-        }
-
-        // unaryOp term
-        else if self.is_unary_op() {
-            self.push_xml_this_token();
-            self.compile_term();
-        }
-
-        // '(' expression ')'
-        else if self.is_open_paren() {
-            self.push_xml_this_token();
-            self.compile_expression();
-            self.push_xml_this_token();
-        }
-
-
-        else {
-            let next_token = self.peek_token().unwrap();
-
-            // varName[ expression ]
-            if next_token == TokenData::TSymbol("[".to_string()) {
-                self.push_xml_this_token();
-                self.push_xml_this_token();
-                self.compile_expression();
-                self.push_xml_this_token();
-            }
-
-            // subroutineCall 1
-            // name '.' subroutineName '(' expressionList ')'
-            else if next_token == TokenData::TSymbol(".".to_string()) {
-                self.push_xml_this_token();
-                self.push_xml_this_token();
-                self.push_xml_this_token();
-                self.push_xml_this_token();
-                self.compile_expression_list();
-                self.push_xml_this_token();
-            }
-
-            // subroutineCall 2 
-            // name '(' expressionList ')'
-            else if next_token == TokenData::TSymbol("(".to_string()) {
-                self.push_xml_this_token();
-                self.push_xml_this_token();
-                self.compile_expression_list();
-                self.push_xml_this_token();
-            }
-
-            // varName
-            else {
-                self.push_xml_this_token();
-            }
-        }
-
-        self.dec_tab();
-        self.push_xml("</term>");
-    }
-
-    fn compile_expression_list(&mut self) {
-        self.push_xml("<expressionList>");
-        self.inc_tab();
-
-        while !self.is_close_paren() {
-            if self.is_comma() {
-                self.push_xml_this_token();
-            }
-            self.compile_expression();
-        }
-
-        self.dec_tab();
-        self.push_xml("</expressionList>");
+        self.write_pop_to_vm(&v_name);
     }
 
     fn compile_do(&mut self) {
-        self.push_xml("<doStatement>");
-        self.inc_tab();
-
+        self.debug_print_this_token("FUNCTION: COMPILE_DO");
         // do
-        self.push_xml_this_token();
+        self.advance();
 
-        let next_token = self.peek_token();
+        // name '.' subroutineName '(' expressionList ')' ';'
+        if self.is_class_method() {
+            let class_name = self.get_identifier();
+            if let Some(v_type) = self.symbol_table.type_of(&class_name) {
+                self.advance();
+                self.advance();
+                let subroutine_name = self.get_identifier();
+                self.advance();
+                self.advance();
 
-        // subroutineName '(' expressionList ')'
-        if next_token == Some(TokenData::TSymbol("(".to_string())) {
-            self.push_xml_this_token();
-            self.push_xml_this_token();
-            self.compile_expression_list();
-            self.push_xml_this_token();
+                // self.vm_writer.write_push("pointer", 0);
+                let v_idx    = self.symbol_table.index_of(&class_name).unwrap();
+                let v_kind = self.symbol_table.kind_of(&class_name).unwrap().to_string();
+
+                self.vm_writer.write_push(&v_kind, v_idx as u16);
+
+                let n_args = self.compile_expression_list();
+                self.advance();
+                self.advance();
+                let name = format!("{}.{}", v_type, subroutine_name);
+                self.vm_writer.write_call(&name, n_args + 1);
+
+            } else {
+                self.advance();
+                self.advance();
+                let subroutine_name = self.get_identifier();
+                self.advance();
+                self.advance();
+                let n_args = self.compile_expression_list();
+                self.advance();
+                self.advance();
+                let name = format!("{}.{}", class_name, subroutine_name);
+                self.vm_writer.write_call(&name, n_args);
+            }
+
+        // subroutine_name '(' expressionList ) ';'
+        } else {
+            let subroutine_name = self.get_identifier();
+            self.advance();
+            self.advance();
+            let n_args = self.compile_expression_list();
+            self.advance();
+            self.advance();
+            self.vm_writer.write_push("pointer", 0);
+            let function_name = format!("{}.{}", self.class_name, &subroutine_name);
+            self.vm_writer.write_call(&function_name, n_args + 1);
         }
 
-        // name '.' subroutineName '(' expressionList ')'
-        else {
-            self.push_xml_this_token();
-            self.push_xml_this_token();
-            self.push_xml_this_token();
-            self.push_xml_this_token();
-            self.compile_expression_list();
-            self.push_xml_this_token();
-        }
-
-        // ';'
-        self.push_xml_this_token();
-
-        self.dec_tab();
-        self.push_xml("</doStatement>");
+        self.vm_writer.push("pop temp 0");
     }
 
     fn compile_if(&mut self) {
-        self.push_xml("<ifStatement>");
-        self.inc_tab();
+        self.debug_print_this_token("FUNCTION: COMPILE_IF");
 
-        // if '(' expression ')' '{' statements '}'
-        self.push_xml_this_token();
-        self.push_xml_this_token();
+        let label_1 = self.get_label();
+        let label_2 = self.get_label();
+
+        // if '(' expression ')'
+        self.advance();
+        self.advance();
         self.compile_expression();
-        self.push_xml_this_token();
-        self.push_xml_this_token();
-        self.compile_statements();
-        self.push_xml_this_token();
+        self.advance();
 
-        // ( else '{' statemetns '}' )?
+        self.vm_writer.write_if(&label_1);
+
+        // '{' statements '}'
+        self.advance();
+        self.compile_statements();
+        self.advance();
+
+        self.vm_writer.write_goto(&label_1);
+        self.vm_writer.write_label(&label_1);
+
+        // ( else '{' statements '}' )?
         if self.is_else() {
-            self.push_xml_this_token();
-            self.push_xml_this_token();
+            self.advance();
+            self.advance();
             self.compile_statements();
-            self.push_xml_this_token();
+            self.advance();
         }
 
-        self.dec_tab();
-        self.push_xml("</ifStatement>");
+        self.vm_writer.write_label(&label_2);
     }
 
     fn compile_while(&mut self) {
-        self.push_xml("<whileStatement>");
-        self.inc_tab();
+        self.debug_print_this_token("FUNCTION: COMPILE_WHILE");
 
-        // while '(' expression ')' '{' statements '}'
-        self.push_xml_this_token();
-        self.push_xml_this_token();
+        let label_1 = self.get_label();
+        let label_2 = self.get_label();
+
+        self.vm_writer.write_label(&label_1);
+
+        // while '(' expression ')'
+        self.advance();
+        self.advance();
         self.compile_expression();
-        self.push_xml_this_token();
-        self.push_xml_this_token();
-        self.compile_statements();
-        self.push_xml_this_token();
+        self.advance();
 
-        self.dec_tab();
-        self.push_xml("</whileStatement>");
+        self.vm_writer.write_if(&label_2);
+
+        // '{' statements '}'
+        self.advance();
+        self.compile_statements();
+        self.advance();
+
+        self.vm_writer.write_goto(&label_1);
+        self.vm_writer.write_label(&label_2);
     }
-    
+
     fn compile_return(&mut self) {
-        self.push_xml("<returnStatement>");
-        self.inc_tab();
+        self.debug_print_this_token("FUNCTION: COMPILE_RETURN");
 
         // return
-        self.push_xml_this_token();
+        self.advance();
 
         // expression?
         while !self.is_semicolon() {
@@ -417,48 +373,216 @@ impl CompilationEngine {
         }
 
         // ';'
-        self.push_xml_this_token();
+        self.advance();
 
-        self.dec_tab();
-        self.push_xml("</returnStatement>");
+        if self.is_void {
+            self.vm_writer.push("push constant 0");
+        }
+
+        self.vm_writer.write_return();
     }
 
+    fn compile_expression_list(&mut self) -> usize {
+        self.debug_print_this_token("FUNCTION: COMPILE_EXPRESSION_LIST");
+
+        let mut n_args = 0;
+
+        while !self.is_close_paren() {
+            if self.is_comma() {
+                self.advance();
+            }
+            self.compile_expression();
+            n_args += 1;
+        }
+
+        n_args
+    }
+
+    fn compile_expression(&mut self) {
+        self.debug_print_this_token("FUNCTION: COMPILE_EXPRESSION");
+        let mut arithmetic = None;
+
+        // term
+        self.compile_term();
+
+        // (op term)*
+        while self.is_op() {
+            arithmetic = self.get_token().clone();
+            self.advance();
+
+            self.compile_term();
+        }
+
+        if let Some(TokenData::TSymbol(symbol)) = arithmetic {
+            self.vm_writer.write_arithmetic(&symbol);
+        }
+    }
+
+    fn compile_term(&mut self) {
+        self.debug_print_this_token("FUNCTION: COMPILE_TERM");
+
+        // integerConst
+        if self.is_integer_const() {
+            let n = self.get_integer_const();
+            self.vm_writer.write_push("constant", n);
+            self.advance();
+        }
+        // keywordConstant
+        else if self.is_keyword_constant() {
+            if let &Some(TokenData::TKeyword(keyword)) = &self.get_token() {
+                match keyword {
+                    Keyword::True => {
+                        self.vm_writer.push("push constant 0");
+                        self.vm_writer.push("not");
+                    }
+                    Keyword::False => {
+                        self.vm_writer.push("push constant 0");
+                    }
+                    Keyword::Null => {
+                        self.vm_writer.push("push constant 0");
+                    }
+                    Keyword::This => {
+                        self.vm_writer.push("push pointer 0");
+                    }
+                    _ => {}
+                }
+            }
+            self.advance();
+        }
+        // unaryOp term
+        else if self.is_unary_op() {
+            let unary_op = self.get_token().clone();
+            self.advance();
+            self.compile_term();
+
+            if let Some(TokenData::TSymbol(op)) = unary_op {
+                self.vm_writer.write_unary_op(&op);
+            }
+        }
+        // '(' expression ')'
+        else if self.is_open_paren() {
+            self.advance();
+            self.compile_expression();
+            self.advance();
+        } else {
+            let next_token = self.peek_token().unwrap();
+
+            if next_token == TokenData::TSymbol("[".to_string()) {
+            }
+            // name '.' subroutineName '(' expressionList ')'
+            else if next_token == TokenData::TSymbol(".".to_string()) {
+                let class_name = self.get_identifier();
+                self.advance();
+                self.advance();
+                let subroutine_name = self.get_identifier();
+                self.advance();
+                self.advance();
+                let n_arg = self.compile_expression_list();
+                self.advance();
+                let name = format!("{}.{}", class_name, subroutine_name);
+                self.vm_writer.write_call(&name, n_arg);
+            }
+            // varName
+            else {
+                let v_name = self.get_identifier();
+                self.advance();
+
+                self.write_push_to_vm(&v_name);
+            }
+        }
+    }
+
+    // helper functions
+    fn advance(&mut self) {
+        self.tokenizer.advance();
+    }
+
+    fn terminate(&mut self) {
+        while self.tokenizer.has_more_tokens() {
+            self.advance();
+        }
+        println!("*** TERMINATE ***"); // DEBUG
+        self.push_vm("*** TERMINATE ***");
+    }
+
+    pub fn output_vm(&self) -> Vec<String> {
+        self.vm_writer.output()
+    }
+
+    // push vm
+    fn push_vm(&mut self, str: &str) {
+        self.vm_writer.push(str);
+    }
+
+    // write vm helper
+    fn write_push_to_vm(&mut self, name: &str) {
+        let v_attribute = self.symbol_table.kind_of(name).unwrap();
+        let v_idx = self.symbol_table.index_of(name).unwrap() as u16;
+
+        match v_attribute {
+            VarKind::Static => {
+                self.vm_writer.write_push("static", v_idx);
+            }
+            VarKind::Field => {
+                self.vm_writer.write_push("this", v_idx);
+            }
+            VarKind::Argument => {
+                self.vm_writer.write_push("argument", v_idx);
+            }
+            VarKind::Var => {
+                self.vm_writer.write_push("local", v_idx);
+            }
+        }
+    }
+
+    fn write_pop_to_vm(&mut self, name: &str) {
+        let v_attribute = self.symbol_table.kind_of(name).unwrap();
+        let v_idx = self.symbol_table.index_of(name).unwrap();
+
+        match v_attribute {
+            VarKind::Static => {
+                self.vm_writer.write_pop("static", v_idx);
+            }
+            VarKind::Field => {
+                self.vm_writer.write_pop("this", v_idx);
+            }
+            VarKind::Argument => {
+                self.vm_writer.write_pop("argument", v_idx);
+            }
+            VarKind::Var => {
+                self.vm_writer.write_pop("local", v_idx);
+            }
+        }
+    }
+
+    // flag check
     fn is_class_var_dec(&self) -> bool {
         self.get_token() == &Some(TokenData::TKeyword(Keyword::Static))
-        || self.get_token() == &Some(TokenData::TKeyword(Keyword::Field))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Field))
     }
 
     fn is_subroutine_dec(&self) -> bool {
         self.get_token() == &Some(TokenData::TKeyword(Keyword::Constructor))
-        || self.get_token() == &Some(TokenData::TKeyword(Keyword::Function))
-        || self.get_token() == &Some(TokenData::TKeyword(Keyword::Method))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Function))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Method))
     }
 
     fn is_statement(&self) -> bool {
-        if let &Some(TokenData::TKeyword(keyword)) = &self.get_token() {
-            keyword == &Keyword::Let 
-            || keyword == &Keyword::If
-            || keyword == &Keyword::While
-            || keyword == &Keyword::Do
-            || keyword == &Keyword::Return
-        } else {
-            false
-        }
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::Let))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Do))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::If))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::While))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Return))
     }
 
-    fn is_semicolon(&self) -> bool {
-        self.get_token() == &Some(TokenData::TSymbol(";".to_string()))
+    fn is_keyword_constant(&self) -> bool {
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::True))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::False))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Null))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::This))
     }
 
-    fn is_var_dec(&self) -> bool {
-        self.get_token() == &Some(TokenData::TKeyword(Keyword::Var))
-    }
-
-    fn is_else(&self) -> bool {
-        self.get_token() == &Some(TokenData::TKeyword(Keyword::Else))
-    }
-
-    fn is_integer_constant(&self) -> bool {
+    fn is_integer_const(&self) -> bool {
         if let &Some(TokenData::TIntVal(_)) = self.get_token() {
             true
         } else {
@@ -466,47 +590,50 @@ impl CompilationEngine {
         }
     }
 
-    fn is_string_constant(&self) -> bool {
-        if let &Some(TokenData::TStringVal(_)) = self.get_token() {
-            true
-        } else {
-            false
-        }
+    fn is_var_dec(&self) -> bool {
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::Var))
     }
 
-    fn is_keyword_constant(&self) -> bool {
-        if let &Some(TokenData::TKeyword(keyword)) = &self.get_token() {
-            keyword == &Keyword::True || keyword == &Keyword::False 
-            || keyword == &Keyword::Null || keyword == &Keyword::This
-        } else {
-            false
-        }
-    }
-
-    fn is_comma(&self) -> bool {
-        self.get_token() == &Some(TokenData::TSymbol(",".to_string()))
+    fn is_close_paren(&self) -> bool {
+        self.get_token() == &Some(TokenData::TSymbol(")".to_string()))
     }
 
     fn is_open_paren(&self) -> bool {
         self.get_token() == &Some(TokenData::TSymbol("(".to_string()))
-    }
-    fn is_close_paren(&self) -> bool {
-        self.get_token() == &Some(TokenData::TSymbol(")".to_string()))
     }
 
     fn is_open_sq(&self) -> bool {
         self.get_token() == &Some(TokenData::TSymbol("[".to_string()))
     }
 
-    fn is_close_sq(&self) -> bool {
-        self.get_token() == &Some(TokenData::TSymbol("]".to_string()))
+    fn is_comma(&self) -> bool {
+        self.get_token() == &Some(TokenData::TSymbol(",".to_string()))
+    }
+
+    fn is_semicolon(&self) -> bool {
+        self.get_token() == &Some(TokenData::TSymbol(";".to_string()))
+    }
+
+    fn is_else(&self) -> bool {
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::Else))
+    }
+
+    fn is_class_method(&self) -> bool {
+        let next_token = self.peek_token();
+        next_token == Some(TokenData::TSymbol(".".to_string()))
     }
 
     fn is_op(&self) -> bool {
         if let &Some(TokenData::TSymbol(symbol)) = &self.get_token() {
-            symbol == "+" || symbol == "-" || symbol == "*" || symbol == "/"
-            || symbol == "&amp;" || symbol == "|" || symbol == "&lt;" 
-            || symbol == "&gt;" || symbol == "="
+            symbol == "+"
+                || symbol == "-"
+                || symbol == "*"
+                || symbol == "/"
+                || symbol == "&amp;"
+                || symbol == "|"
+                || symbol == "&lt;"
+                || symbol == "&gt;"
+                || symbol == "="
         } else {
             false
         }
@@ -514,20 +641,81 @@ impl CompilationEngine {
 
     fn is_unary_op(&self) -> bool {
         self.get_token() == &Some(TokenData::TSymbol("-".to_string()))
-        || self.get_token() == &Some(TokenData::TSymbol("~".to_string()))
+            || self.get_token() == &Some(TokenData::TSymbol("~".to_string()))
     }
 
-}
+    // get functions
+    fn get_token(&self) -> &Option<TokenData> {
+        self.tokenizer.get_token()
+    }
 
-#[test]
-fn test() {
-    let test_tokenizer = Tokenizer::new(PathBuf::from("./testcase/test/test.jack"));
-    let mut compile_engine = CompilationEngine::new(test_tokenizer);
+    fn get_identifier(&self) -> String {
+        if let Some(TokenData::TIdentifier(id)) = self.get_token() {
+            id.to_string()
+        } else {
+            panic!("ERROR: CE.get_identifier()");
+        }
+    }
 
-    compile_engine.start_compile();
-    println!("//////////////////////");
-    println!();
-    compile_engine.debug_xml();
-    println!();
-    println!("//////////////////////");
+    fn get_integer_const(&self) -> u16 {
+        if let Some(TokenData::TIntVal(n)) = self.get_token() {
+            *n
+        } else {
+            panic!("ERROR: CE.get_integer_const()");
+        }
+    }
+
+    fn get_var_type(&self) -> String {
+        if let Some(token) = self.get_token() {
+            match token {
+                TokenData::TKeyword(keyword) => match keyword {
+                    Keyword::Int => "int".to_string(),
+                    Keyword::Boolean => "boolean".to_string(),
+                    Keyword::Char => "char".to_string(),
+                    _ => {
+                        panic!("ERROR: get var name");
+                    }
+                },
+                TokenData::TIdentifier(id) => id.to_string(),
+                _ => {
+                    panic!("ERROR: get var name");
+                }
+            }
+        } else {
+            panic!("ERROR: get var name");
+        }
+    }
+
+    fn get_label(&mut self) -> String {
+        let label = format!("L{}", self.label_index);
+        self.label_index += 1;
+        label
+    }
+
+    fn peek_token(&self) -> Option<TokenData> {
+        self.tokenizer.peek_token()
+    }
+
+    // set functions
+    fn set_class_name(&mut self) {
+        self.class_name = self.get_identifier();
+    }
+
+    fn set_type(&mut self) {
+        if let &Some(TokenData::TKeyword(keyword)) = &self.get_token() {
+            self.is_void = keyword == &Keyword::Void;
+        } else {
+            self.is_void = false;
+        }
+    }
+
+    // debugger
+    fn debug_print_this_token(&self, message: &str) {
+        println!("DEBUG TOKEN >> /* {} */ {:?}", message, self.get_token());
+    }
+
+    fn debug_priint_symbol_table(&self) {
+        self.symbol_table.debug_print_class_table();
+        self.symbol_table.debug_print_subroutine_table();
+    }
 }

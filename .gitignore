@@ -49,7 +49,7 @@ nand2tetris/
 10/jack_analyzer/origin
 
 11/compiler/target
-11/compiler/testdir
+11/compiler/testcase
 11/Average
 11/ComplexArrays
 11/ConvertToBin

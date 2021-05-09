@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use regex::Regex;
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Tokenizer {
     token_data: Option<TokenData>,
     tokens: Vec<String>,
@@ -33,6 +33,11 @@ impl Tokenizer {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.token_data = None;
+        self.idx = 0;
+    }
+
     pub fn has_more_tokens(&self) -> bool {
         self.tokens.len() > self.idx
     }
@@ -44,8 +49,8 @@ impl Tokenizer {
         }
     }
 
-    pub fn get_token_debug(&self) -> String {
-        format!("{:?}", self.token_data)
+    pub fn get_token_debug(&self) {
+        println!("{:?}", self.token_data);
     }
 
     pub fn get_token(&self) -> &Option<TokenData> {
@@ -93,7 +98,7 @@ impl Tokenizer {
 
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenData {
     TKeyword(Keyword),
     TSymbol(String),
@@ -152,7 +157,7 @@ impl TokenData {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Keyword {
     Class,
     Method,
