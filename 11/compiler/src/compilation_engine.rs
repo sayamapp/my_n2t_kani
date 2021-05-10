@@ -91,6 +91,11 @@ impl CompilationEngine {
         println!("FUNCTION: COMPILE_SUBROUTINE");
         self.symbol_table.startSubroutine();
 
+        let name = "this";
+        let attribute = VarKind::Argument;
+        let v_type = self.class_name.to_string();
+        self.symbol_table.define(&name, &v_type, &attribute);
+
         // attribute type subroutineName
         let attribute = self.get_token().clone();
         self.advance();
@@ -223,6 +228,8 @@ impl CompilationEngine {
     fn compile_let(&mut self) {
         self.debug_print_this_token("FUNCTION: COMPILE_LET");
 
+        let mut is_array = false;
+
         // let varName
         self.advance();
         let v_name = self.get_identifier();
@@ -230,9 +237,14 @@ impl CompilationEngine {
 
         // ('[' expression ']' )?
         if self.is_open_sq() {
+            is_array = true;
             self.advance();
             self.compile_expression();
             self.advance();
+
+            self.write_push_to_vm(&v_name);
+            self.vm_writer.push("add");
+            self.vm_writer.push("pop pointer 1");
         }
 
         // =
@@ -244,7 +256,13 @@ impl CompilationEngine {
         // ;
         self.advance();
 
-        self.write_pop_to_vm(&v_name);
+        if is_array {
+            self.vm_writer.push("pop that 0");
+        } else {
+            self.write_pop_to_vm(&v_name);
+        }
+        self.vm_writer.push("push constant 0");
+        self.vm_writer.push("pop pointer 1");
     }
 
     fn compile_do(&mut self) {
@@ -262,8 +280,7 @@ impl CompilationEngine {
                 self.advance();
                 self.advance();
 
-                // self.vm_writer.write_push("pointer", 0);
-                let v_idx    = self.symbol_table.index_of(&class_name).unwrap();
+                let v_idx = self.symbol_table.index_of(&class_name).unwrap();
                 let v_kind = self.symbol_table.kind_of(&class_name).unwrap().to_string();
 
                 self.vm_writer.write_push(&v_kind, v_idx as u16);
@@ -273,18 +290,41 @@ impl CompilationEngine {
                 self.advance();
                 let name = format!("{}.{}", v_type, subroutine_name);
                 self.vm_writer.write_call(&name, n_args + 1);
-
             } else {
-                self.advance();
-                self.advance();
-                let subroutine_name = self.get_identifier();
-                self.advance();
-                self.advance();
-                let n_args = self.compile_expression_list();
-                self.advance();
-                self.advance();
-                let name = format!("{}.{}", class_name, subroutine_name);
-                self.vm_writer.write_call(&name, n_args);
+                // if class_name == self.class_name {
+                if (class_name != "Array"
+                    && class_name != "Keyboard"
+                    && class_name != "Math"
+                    && class_name != "Memory"
+                    && class_name != "Output"
+                    && class_name != "Screen"
+                    && class_name != "String"
+                    && class_name != "Sys")
+                {
+                    self.advance();
+                    self.advance();
+                    let subroutine_name = self.get_identifier();
+                    self.advance();
+                    self.advance();
+                    self.vm_writer.write_push("pointer", 0);
+                    let n_args = self.compile_expression_list();
+                    self.advance();
+                    self.advance();
+                    let name = format!("{}.{}", class_name, subroutine_name);
+                    self.vm_writer.write_call(&name, n_args + 1);
+                } else {
+                    self.advance();
+                    self.advance();
+                    let subroutine_name = self.get_identifier();
+                    self.advance();
+                    self.advance();
+                    // self.vm_writer.write_push("pointer", 0);
+                    let n_args = self.compile_expression_list();
+                    self.advance();
+                    self.advance();
+                    let name = format!("{}.{}", class_name, subroutine_name);
+                    self.vm_writer.write_call(&name, n_args);
+                }
             }
 
         // subroutine_name '(' expressionList ) ';'
@@ -427,6 +467,26 @@ impl CompilationEngine {
             self.vm_writer.write_push("constant", n);
             self.advance();
         }
+        // stringConst
+        else if self.is_string_constant() {
+            let mut string_val = String::new();
+            if let &Some(TokenData::TStringVal(s_val)) = &self.get_token() {
+                string_val = s_val.to_string();
+            }
+            let string_len = string_val.len();
+
+            self.vm_writer
+                .push(&format!("push constant {}", string_len));
+            self.vm_writer.push(&format!("call String.new 1"));
+            let chars: Vec<char> = string_val.chars().collect();
+            for char in chars {
+                let b = char as u8;
+                self.vm_writer.push(&format!("push constant {}", b));
+                self.vm_writer.push("call String.appendChar 2");
+            }
+
+            self.advance();
+        }
         // keywordConstant
         else if self.is_keyword_constant() {
             if let &Some(TokenData::TKeyword(keyword)) = &self.get_token() {
@@ -467,20 +527,73 @@ impl CompilationEngine {
         } else {
             let next_token = self.peek_token().unwrap();
 
+            // varName '[' expression ']'
             if next_token == TokenData::TSymbol("[".to_string()) {
+                let var_name = self.get_identifier();
+                self.write_push_to_vm(&var_name);
+                self.advance();
+                self.advance();
+                self.compile_expression();
+                self.vm_writer.push("add");
+                self.vm_writer.push("pop pointer 1");
+                self.vm_writer.push("push that 0");
+                self.advance();
+
+                self.vm_writer.push("push constant 0");
+                self.vm_writer.push("pop pointer 1");
             }
             // name '.' subroutineName '(' expressionList ')'
             else if next_token == TokenData::TSymbol(".".to_string()) {
                 let class_name = self.get_identifier();
-                self.advance();
-                self.advance();
-                let subroutine_name = self.get_identifier();
-                self.advance();
-                self.advance();
-                let n_arg = self.compile_expression_list();
-                self.advance();
-                let name = format!("{}.{}", class_name, subroutine_name);
-                self.vm_writer.write_call(&name, n_arg);
+                if let Some(v_type) = self.symbol_table.type_of(&class_name) {
+                    self.advance();
+                    self.advance();
+                    let subroutine_name = self.get_identifier();
+                    self.advance();
+                    self.advance();
+
+                    let v_idx = self.symbol_table.index_of(&class_name).unwrap();
+                    let v_kind = self.symbol_table.kind_of(&class_name).unwrap().to_string();
+
+                    self.vm_writer.write_push(&v_kind, v_idx as u16);
+
+                    let n_args = self.compile_expression_list();
+                    self.advance();
+                    let name = format!("{}.{}", v_type, subroutine_name);
+                    self.vm_writer.write_call(&name, n_args + 1);
+                } else {
+                    if (class_name != "Array"
+                        && class_name != "Keyboard"
+                        && class_name != "Math"
+                        && class_name != "Memory"
+                        && class_name != "Output"
+                        && class_name != "Screen"
+                        && class_name != "String"
+                        && class_name != "Sys")
+                    {
+                        self.advance();
+                        self.advance();
+                        let subroutine_name = self.get_identifier();
+                        self.advance();
+                        self.advance();
+                        self.vm_writer.write_push("pointer", 0);
+                        let n_args = self.compile_expression_list();
+                        self.advance();
+                        let name = format!("{}.{}", class_name, subroutine_name);
+                        self.vm_writer.write_call(&name, n_args + 1);
+                    } else {
+                        self.advance();
+                        self.advance();
+                        let subroutine_name = self.get_identifier();
+                        self.advance();
+                        self.advance();
+                        // self.vm_writer.write_push("pointer", 0);
+                        let n_arg = self.compile_expression_list();
+                        self.advance();
+                        let name = format!("{}.{}", class_name, subroutine_name);
+                        self.vm_writer.write_call(&name, n_arg);
+                    }
+                }
             }
             // varName
             else {
@@ -584,6 +697,14 @@ impl CompilationEngine {
 
     fn is_integer_const(&self) -> bool {
         if let &Some(TokenData::TIntVal(_)) = self.get_token() {
+            true
+        } else {
+            false
+        }
+    }
+
+    fn is_string_constant(&self) -> bool {
+        if let &Some(TokenData::TStringVal(_)) = self.get_token() {
             true
         } else {
             false

@@ -39,7 +39,7 @@ impl VMWriter {
             "+" => self.vm.push("add".to_string()),
             "-" => self.vm.push("sub".to_string()),
             "*" => self.vm.push("call Math.multiply 2".to_string()),
-            "/" => self.vm.push("call Math.devide 2".to_string()),
+            "/" => self.vm.push("call Math.divide 2".to_string()),
             "&amp;" => self.vm.push("and".to_string()),
             "|" => self.vm.push("or".to_string()),
             "&lt;" => self.vm.push("lt".to_string()),
