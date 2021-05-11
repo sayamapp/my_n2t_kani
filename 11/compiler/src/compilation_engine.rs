@@ -148,6 +148,8 @@ impl CompilationEngine {
         self.compile_statements();
         // '}'
         self.advance();
+
+        self.debug_priint_symbol_table();
     }
 
     fn compile_parameter_list(&mut self) -> usize {
@@ -354,7 +356,7 @@ impl CompilationEngine {
         self.compile_statements();
         self.advance();
 
-        self.vm_writer.write_goto(&label_1);
+        self.vm_writer.write_goto(&label_2);
         self.vm_writer.write_label(&label_1);
 
         // ( else '{' statements '}' )?
