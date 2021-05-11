@@ -66,6 +66,18 @@ impl SymbolTable {
         }
     }
 
+    pub fn contains(&self, name: &str) -> bool {
+        self.conteins_class(name) || self.contains_subroutine(name)
+    }
+
+    pub fn conteins_class(&self, name: &str) -> bool {
+        self.class_table.contains_key(name)
+    }
+
+    pub fn contains_subroutine(&self, name: &str) -> bool {
+        self.subroutine_table.contains_key(name)
+    }
+
     pub fn var_count(&self, kind: &VarKind) -> usize {
         match kind {
             VarKind::Static => self.static_idx,

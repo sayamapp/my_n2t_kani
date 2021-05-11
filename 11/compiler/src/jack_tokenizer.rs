@@ -64,6 +64,14 @@ impl Tokenizer {
             None
         }
     }
+
+    pub fn get_string_val(&self) -> Option<String> {
+        if let Some(TokenData::TStringVal(str)) = self.get_token() {
+            Some(str.to_string())
+        } else {
+            None
+        }
+    }
     
     pub fn get_xml(&self) -> String {
         if let Some(token) = &self.token_data {
@@ -89,11 +97,129 @@ impl Tokenizer {
         }
     }
 
-
-
     fn set_token_data(&mut self) {
         let token_data = TokenData::new(&self.tokens[self.idx]);
         self.token_data = Some(token_data);
+    }
+
+    // flag check
+    pub fn is_class_var_dec(&self) -> bool {
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::Static))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Field))
+    }
+    pub fn is_class_static(&self) -> bool {
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::Static))
+    }
+    pub fn is_class_field(&self) -> bool {
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::Field))
+    }
+
+    pub fn is_subroutine_dec(&self) -> bool {
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::Constructor))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Function))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Method))
+    }
+
+    pub fn is_constructor(&self) -> bool {
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::Constructor))
+    }
+
+    pub fn is_function(&self) -> bool {
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::Function))
+    }
+
+    pub fn is_method(&self) -> bool {
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::Method))
+    }
+
+
+    pub fn is_statement(&self) -> bool {
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::Let))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Do))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::If))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::While))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Return))
+    }
+
+    pub fn is_keyword_constant(&self) -> bool {
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::True))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::False))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Null))
+            || self.get_token() == &Some(TokenData::TKeyword(Keyword::This))
+    }
+
+    pub fn is_integer_const(&self) -> bool {
+        if let &Some(TokenData::TIntVal(_)) = self.get_token() {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_string_constant(&self) -> bool {
+        if let &Some(TokenData::TStringVal(_)) = self.get_token() {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_var_dec(&self) -> bool {
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::Var))
+    }
+
+    pub fn is_close_paren(&self) -> bool {
+        self.get_token() == &Some(TokenData::TSymbol(")".to_string()))
+    }
+
+    pub fn is_open_paren(&self) -> bool {
+        self.get_token() == &Some(TokenData::TSymbol("(".to_string()))
+    }
+
+    pub fn is_open_sq(&self) -> bool {
+        self.get_token() == &Some(TokenData::TSymbol("[".to_string()))
+    }
+
+    pub fn is_comma(&self) -> bool {
+        self.get_token() == &Some(TokenData::TSymbol(",".to_string()))
+    }
+
+    pub fn is_semicolon(&self) -> bool {
+        self.get_token() == &Some(TokenData::TSymbol(";".to_string()))
+    }
+
+    pub fn is_else(&self) -> bool {
+        self.get_token() == &Some(TokenData::TKeyword(Keyword::Else))
+    }
+
+    pub fn is_class_method(&self) -> bool {
+        let next_token = self.peek_token();
+        next_token == Some(TokenData::TSymbol(".".to_string()))
+    }
+
+    pub fn is_op(&self) -> bool {
+        if let &Some(TokenData::TSymbol(symbol)) = &self.get_token() {
+            symbol == "+"
+                || symbol == "-"
+                || symbol == "*"
+                || symbol == "/"
+                || symbol == "&amp;"
+                || symbol == "|"
+                || symbol == "&lt;"
+                || symbol == "&gt;"
+                || symbol == "="
+        } else {
+            false
+        }
+    }
+
+    pub fn is_unary_op(&self) -> bool {
+        self.get_token() == &Some(TokenData::TSymbol("-".to_string()))
+            || self.get_token() == &Some(TokenData::TSymbol("~".to_string()))
+    }
+
+    pub fn next_is_dot(&self) -> bool {
+        self.peek_token() == Some(TokenData::TSymbol(".".to_string()))
     }
 
 }

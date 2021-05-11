@@ -41,15 +41,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         compilation_engine_xml.start_compile();
         // write to xml
         let output_xml = compilation_engine_xml.output_xml();
-        write_xml(jack_file.clone(), &output_xml);
+        write_file(jack_file.clone(), "xml", &output_xml);
 
         // start compile to vm
         let mut compilation_engine = CompilationEngine::new(tokenizer);
         compilation_engine.start_compile();
         // write to vm
         let output_vm = compilation_engine.output_vm();
-        write_vm(jack_file, &output_vm);
-        
+        write_file(jack_file, "vm", &output_vm);
 
         // progressBar
         for _ in 0..100 {
@@ -83,19 +82,10 @@ fn get_jack_files(path: &str) -> Vec<PathBuf> {
     output_pbs
 }
 
-fn write_xml(mut path_buf: PathBuf, vec_xml: &Vec<String>) {
-    path_buf.set_extension("xml");
+fn write_file(mut path_buf: PathBuf, extension: &str, vec: &Vec<String>) {
+    path_buf.set_extension(extension);
     let mut buf_writer = BufWriter::new(File::create(&path_buf).unwrap());
-    let xml = vec_xml.join("\n");
-    write!(buf_writer, "{}", xml).unwrap();
-    buf_writer.flush().unwrap();
-}
-
-
-fn write_vm(mut path_buf: PathBuf, vec_vm: &Vec<String>) {
-    path_buf.set_extension("vm");
-    let mut buf_writer = BufWriter::new(File::create(&path_buf).unwrap());
-    let vm = vec_vm.join("\n");
-    write!(buf_writer, "{}", vm).unwrap();
+    let output_string = vec.join("\n");
+    write!(buf_writer, "{}", output_string).unwrap();
     buf_writer.flush().unwrap();
 }
