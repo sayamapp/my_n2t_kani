@@ -253,6 +253,8 @@ impl CompilationEngine {
             self.write_push_to_vm(&v_name);
             self.vm_writer.push("add");
             self.vm_writer.push("pop pointer 1");
+            self.vm_writer.write_push("pointer", 1);
+
         }
 
         // =
@@ -266,7 +268,10 @@ impl CompilationEngine {
         self.advance();
 
         if is_array {
-            self.vm_writer.push("pop that 0");
+            self.vm_writer.write_pop("temp", 0);
+            self.vm_writer.write_pop("pointer", 1);
+            self.vm_writer.write_push("temp", 0);
+            self.vm_writer.write_pop("that", 0);
         } else {
             self.write_pop_to_vm(&v_name);
         }
