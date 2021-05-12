@@ -1,0 +1,117 @@
+class Math {
+    static Array twoToThe;
+    static Array xs;
+
+    function void init() {
+        var int i, j, x;
+        let i = 0;
+        let j = 0;
+        let x = 1;
+        let twoToThe = Array.new(16);
+        while (i < 16) {
+            let twoToThe[i] = x;
+            let x = x + x;
+            let i = i + 1;
+        }
+        return;
+    }
+
+    function bool bit(int x, int j) {
+        var int y, res;
+        let y = twoToThe[j];
+        let res = x & y;
+
+        if (~(res = 0)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function int abs(int x) {
+        if (x < 0) {
+            return -x;
+        } else {
+            return x;
+        }
+    }
+
+    function int multiply(int x, int y) {
+        var int sum, shiftedX, j;
+        let sum = 0;
+        let shiftedX = x;
+        let j = 0;
+        while (j < 16) {
+            if (Math.bit(y, j)) {
+                let sum = sum + shiftedX;
+            }
+            let shiftedX = shiftedX + shiftedX;
+            let j = j + 1;
+        }
+        return sum;
+    }
+
+    function int divide(int x, int y) {
+        var bool isPos;
+        var int q, res;
+        let isPos = true;
+        if (((x < 0) & (y > 0) ) | ((x > 0) & (y < 0))) {
+            let isPos = ~isPos;
+        }
+        let x = Math.abs(x);
+        let y = Math.abs(y);
+
+        if (y > x) {
+            let res = 0;
+        } else {
+            let q = Math.divide(x, 2 * y);
+            if ((x - (2 * q * y)) < y) {
+                let res =  2 * q;
+            } else {
+                let res = 2 * q + 1;
+            }
+        }
+        if (~isPos) {
+            let res = -res;
+        }
+        return res;
+    }
+
+    function int min(int x, int y) {
+        if (x > y) {
+            return y;
+        } else {
+            return x;
+        }
+    }
+
+    function int max(int x, int y) {
+        if (x > y) {
+            return x;
+        } else {
+            return y;
+        }
+    }
+
+    function int sqrt(int x) {
+        var int y, j, temp;
+        let y = 0;
+        let j = 7;
+        while (j > -1) {
+            let temp = (y + twoToThe[j]) * (y + twoToThe[j]);
+            if ((temp - 1 < x) & (temp > 0)) {
+                let y = y + twoToThe[j];
+            }
+            let j = j - 1;
+        }
+        return y;
+    }
+
+    function int pow(int x, int y) {
+        if (y = 0) {
+            return 1;
+        } else {
+            return x * Math.pow(x, y - 1);
+        }
+    }
+}

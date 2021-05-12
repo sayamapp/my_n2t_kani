@@ -226,7 +226,7 @@ impl CompilationEngine {
                         self.compile_return();
                     }
                     _ => {
-                        self.terminate();
+                        panic!("ERROR: This token is not statement");
                     }
                 }
             }
@@ -689,17 +689,6 @@ impl CompilationEngine {
         false
     }
 
-    fn is_class_var_dec(&self) -> bool {
-        self.get_token() == &Some(TokenData::TKeyword(Keyword::Static))
-            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Field))
-    }
-
-    fn is_subroutine_dec(&self) -> bool {
-        self.get_token() == &Some(TokenData::TKeyword(Keyword::Constructor))
-            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Function))
-            || self.get_token() == &Some(TokenData::TKeyword(Keyword::Method))
-    }
-
     fn is_statement(&self) -> bool {
         self.get_token() == &Some(TokenData::TKeyword(Keyword::Let))
             || self.get_token() == &Some(TokenData::TKeyword(Keyword::Do))
@@ -731,9 +720,6 @@ impl CompilationEngine {
         }
     }
 
-    fn is_var_dec(&self) -> bool {
-        self.get_token() == &Some(TokenData::TKeyword(Keyword::Var))
-    }
 
     fn is_close_paren(&self) -> bool {
         self.get_token() == &Some(TokenData::TSymbol(")".to_string()))
@@ -759,10 +745,6 @@ impl CompilationEngine {
         self.get_token() == &Some(TokenData::TKeyword(Keyword::Else))
     }
 
-    fn is_class_method(&self) -> bool {
-        let next_token = self.peek_token();
-        next_token == Some(TokenData::TSymbol(".".to_string()))
-    }
 
     fn is_op(&self) -> bool {
         if let &Some(TokenData::TSymbol(symbol)) = &self.get_token() {
